@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFC - BirMenu</title>
+    <link rel="icon" type="image/png" href="../assets/images/favicon.png">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Google Fonts - Formal & Elegant -->
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;0,6..96,700;1,6..96,400&display=swap" rel="stylesheet">
+    <!-- AOS Animation Library -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <!-- i18next for translations -->
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23.7.6/i18next.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="header-section">
+        <div class="container">
+            <div class="header-inner">
+                <div class="header-left">
+                    <a class="navbar-logo" href="../" aria-label="Ana səhifə">
+                        <img id="navbarLogo" src="../assets/images/logo.png" alt="Logo">
+                    </a>
+                </div>
+                
+                <!-- Desktop Navigation -->
+                <nav class="main-nav desktop-nav" aria-label="Ana Naviqasiya">
+                    <div class="nav-item dropdown services-dropdown">
+                        <a class="nav-link dropdown-toggle" href="../#services" id="servicesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" data-i18n="nav.services">
+                            <!-- Translated text will be inserted here -->
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="servicesDropdown">
+                            <li><a class="dropdown-item" href="service-qr.html">QR Menyu</a></li>
+                            <li><a class="dropdown-item" href="service-nfc.html">NFC</a></li>
+                            <li><a class="dropdown-item" href="service-qrnfc.html">QR CODE + NFC</a></li>
+                        </ul>
+                    </div>
+                    <a href="../#restaurants" data-i18n="nav.restaurants"></a>
+                </nav>
+
+                <div class="header-right">
+                    <a class="btn-join desktop-only" href="https://wa.me/994515103402?text=Salam%2C%20Biz%C9%99%20BirMenu%20laz%C4%B1md%C4%B1r!" target="_blank" data-i18n="nav.joinUs"></a>
+                    <!-- Language Dropdown -->
+                    <div class="dropdown language-dropdown">
+                        <button class="dropdown-toggle" id="languageDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                            <img class="lang-flag" id="currentLangFlag" src="https://flagcdn.com/24x18/az.png" alt="AZ flag" loading="lazy">
+                            <span class="lang-text" id="currentLangText">AZ</span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end" id="languageDropdownMenu" aria-labelledby="languageDropdownBtn">
+                            <button class="dropdown-item language-option active" data-lang="az">
+                                <img class="lang-flag" src="https://flagcdn.com/24x18/az.png" alt="AZ flag" loading="lazy">
+                                <span class="lang-name">Azərbaycan</span>
+                            </button>
+                            <button class="dropdown-item language-option" data-lang="ru">
+                                <img class="lang-flag" src="https://flagcdn.com/24x18/ru.png" alt="RU flag" loading="lazy">
+                                <span class="lang-name">Русский</span>
+                            </button>
+                            <button class="dropdown-item language-option" data-lang="en">
+                                <img class="lang-flag" src="https://flagcdn.com/24x18/gb.png" alt="EN flag" loading="lazy">
+                                <span class="lang-name">English</span>
+                            </button>
+                        </div>
+                    </div>
+                    <button class="theme-toggle" id="themeToggle" aria-label="Rəng rejimini dəyişdir" title="Rəng rejimi">
+                        <i class="bi bi-sun-fill" id="themeIcon"></i>
+                    </button>
+                    <a class="btn-login-nav desktop-only" href="../login.php" data-i18n="nav.login"></a>
+                    
+                    <!-- Mobile Menu Toggle -->
+                    <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Menyu" aria-expanded="false" type="button">
+                        <span class="hamburger-line"></span>
+                        <span class="hamburger-line"></span>
+                        <span class="hamburger-line"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Menu Overlay -->
+            <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
+
+            <!-- Mobile Navigation -->
+            <div class="mobile-nav" id="mobileNav">
+                <nav class="mobile-nav-content">
+                    <div class="mobile-nav-item">
+                        <button class="mobile-nav-link" id="mobileServicesToggle">
+                            <span data-i18n="nav.services"></span>
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                        <div class="mobile-submenu" id="mobileServicesMenu">
+                            <a href="service-qr.html" class="mobile-submenu-item">QR Menyu</a>
+                            <a href="service-nfc.html" class="mobile-submenu-item">NFC</a>
+                            <a href="service-qrnfc.html" class="mobile-submenu-item">QR CODE + NFC</a>
+                        </div>
+                    </div>
+                    <a href="../#restaurants" class="mobile-nav-link" data-i18n="nav.restaurants"></a>
+                    <div class="mobile-nav-divider"></div>
+                    <a href="https://wa.me/994515103402?text=Salam%2C%20Biz%C9%99%20BirMenu%20laz%C4%B1md%C4%B1r!" target="_blank" class="mobile-nav-link mobile-nav-cta">
+                        <i class="bi bi-plus-circle"></i>
+                        <span data-i18n="nav.joinUs"></span>
+                    </a>
+                    <a href="../login.php" class="mobile-nav-link">
+                        <i class="bi bi-box-arrow-in-right"></i>
+                        <span data-i18n="nav.login"></span>
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Service Detail Hero -->
+    <section class="service-detail-hero">
+        <div class="container">
+            <div class="service-hero-content" data-aos="fade-up" data-aos-duration="800">
+                <div class="service-icon-large">
+                    <i class="bi bi-broadcast"></i>
+                </div>
+                <h1>NFC Texnologiyası</h1>
+                <p class="lead">Telefonunuzu yaxınlaşdırın və avtomatik menyu açılsın. Təmas gərəkmir, sadəcə yaxınlaşdırın.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Service Details -->
+    <section class="service-details-section">
+        <div class="container">
+            <div class="row g-5">
+                <div class="col-lg-8">
+                    <div class="service-content" data-aos="fade-up" data-aos-duration="600">
+                        <h2>NFC Texnologiyası Nədir?</h2>
+                        <p>NFC (Near Field Communication) - yaxın məsafədə simsiz rabitə texnologiyasıdır. Müştərilər telefonlarını NFC etiketinə yaxınlaşdırdıqda avtomatik olaraq rəqəmsal menyu açılır. Skan etməyə, düyməyə basmağa ehtiyac yoxdur.</p>
+                        
+                        <div class="feature-highlight">
+                            <h3>Üstünlüklər</h3>
+                            <ul class="feature-list">
+                                <li>
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <div>
+                                        <strong>Daha sürətli</strong>
+                                        <p>QR koddan daha sürətli - sadəcə telefonu yaxınlaşdırın</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <div>
+                                        <strong>Təmassız</strong>
+                                        <p>Tam təmassız texnologiya, gigiyenik və təhlükəsiz</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <div>
+                                        <strong>Premium təcrübə</strong>
+                                        <p>Müasir və innovativ müştəri təcrübəsi yaradın</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <div>
+                                        <strong>İstifadə asanlığı</strong>
+                                        <p>Heç bir tətbiq yükləməyə ehtiyac yoxdur</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <div>
+                                        <strong>Uzunömürlü</strong>
+                                        <p>NFC etiketləri uzun müddət istifadə edilə bilər</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <div>
+                                        <strong>Geniş uyğunluq</strong>
+                                        <p>Əksər müasir smartfonlarda NFC dəstəyi var</p>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <h3>Necə işləyir?</h3>
+                        <div class="steps-grid">
+                            <div class="step-card" data-aos="fade-up" data-aos-delay="100">
+                                <div class="step-number">1</div>
+                                <h4>NFC Etiket Yerləşdirin</h4>
+                                <p>Kiçik, diskret NFC etiketləri masalar, divarlara və ya istənilən yerdə yapışdırılır</p>
+                            </div>
+                            <div class="step-card" data-aos="fade-up" data-aos-delay="200">
+                                <div class="step-number">2</div>
+                                <h4>Telefonu Yaxınlaşdırın</h4>
+                                <p>Müştərilər NFC dəstəkli telefonlarını etiketə yaxınlaşdırırlar (2-4 sm məsafə)</p>
+                            </div>
+                            <div class="step-card" data-aos="fade-up" data-aos-delay="300">
+                                <div class="step-number">3</div>
+                                <h4>Avtomatik Açılır</h4>
+                                <p>Menyu avtomatik olaraq telefonlarında açılır, skan etməyə ehtiyac yoxdur</p>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info mt-4" data-aos="fade-up">
+                            <i class="bi bi-info-circle-fill"></i>
+                            <div>
+                                <strong>Qeyd:</strong> NFC texnologiyası iPhone 7 və daha yeni, həmçinin 2016-cı ildən sonra istehsal edilmiş əksər Android telefonlarda dəstəklənir.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="service-sidebar">
+                        <div class="sidebar-card" data-aos="fade-left" data-aos-duration="600">
+                            <h4>Digər Xidmətlər</h4>
+                            <div class="sidebar-links">
+                                <a href="service-qr.html" class="sidebar-link">
+                                    <i class="bi bi-qr-code"></i>
+                                    <span>QR Menyu</span>
+                                    <i class="bi bi-arrow-right"></i>
+                                </a>
+                                <a href="service-qrnfc.html" class="sidebar-link">
+                                    <i class="bi bi-layers-fill"></i>
+                                    <span>QR Menyu + NFC</span>
+                                    <i class="bi bi-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="sidebar-card cta-card" data-aos="fade-left" data-aos-duration="600" data-aos-delay="200">
+                            <h4>Bizə qoşulun</h4>
+                            <p>NFC həllimiz haqqında daha ətraflı məlumat üçün bizimlə əlaqə saxlayın</p>
+                            <a href="../#contact" class="btn btn-primary w-100">
+                                <i class="bi bi-envelope"></i> Əlaqə saxlayın
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Scroll to Top Button -->
+
+    <footer class="simple-footer">
+        <p>© 2025 BIRMENU. Bütün hüquqlar qorunur.</p>
+    </footer>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- AOS Animation Library -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <!-- Translations -->
+    <script src="../assets/js/translations.js"></script>
+    <!-- Custom JS -->
+    <script src="../assets/js/script.js"></script>
+    <script>
+        // Initialize AOS
+        AOS.init({
+            duration: 600,
+            easing: 'ease-out',
+            once: true,
+            offset: 50
+        });
+    </script>
+</body>
+</html>
+

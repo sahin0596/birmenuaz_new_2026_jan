@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="legal.terms.title">İstifadə Şərtləri - BirMenu</title>
+    <link rel="icon" type="image/png" href="assets/images/favicon.png">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;0,6..96,700;1,6..96,400&display=swap" rel="stylesheet">
+    <!-- i18next for translations -->
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23.7.6/i18next.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header-section">
+        <div class="container">
+            <div class="header-inner">
+                <div class="header-left">
+                    <a class="navbar-logo" href="./" aria-label="Ana səhifə">
+                        <img id="navbarLogo" src="assets/images/logo.png" alt="Logo">
+                    </a>
+                </div>
+                
+                <!-- Desktop Navigation -->
+                <nav class="main-nav desktop-nav" aria-label="Ana Naviqasiya">
+                    <div class="nav-item dropdown services-dropdown">
+                        <a class="nav-link dropdown-toggle" href="./#services" id="servicesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" data-i18n="nav.services">
+                            Xidmətlər
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="servicesDropdown">
+                            <li><a class="dropdown-item" href="services/service-qr.html">QR Menyu</a></li>
+                            <li><a class="dropdown-item" href="services/service-nfc.html">NFC</a></li>
+                            <li><a class="dropdown-item" href="services/service-qrnfc.html">QR CODE + NFC</a></li>
+                        </ul>
+                    </div>
+                    <a href="./#restaurants" data-i18n="nav.restaurants">Restoranlar</a>
+                </nav>
+
+                <div class="header-right">
+                    <a class="btn-join desktop-only" href="https://wa.me/994507736216?text=Salam%2C%20Biz%C9%99%20BirMenu%20laz%C4%B1md%C4%B1r!" target="_blank" data-i18n="nav.joinUs">Qoşul</a>
+                    <!-- Language Dropdown -->
+                    <div class="dropdown language-dropdown">
+                        <button class="dropdown-toggle" id="languageDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                            <img class="lang-flag" id="currentLangFlag" src="https://flagcdn.com/24x18/az.png" alt="AZ flag" loading="lazy">
+                            <span class="lang-text" id="currentLangText">AZ</span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end" id="languageDropdownMenu" aria-labelledby="languageDropdownBtn">
+                            <button class="dropdown-item language-option active" data-lang="az">
+                                <img class="lang-flag" src="https://flagcdn.com/24x18/az.png" alt="AZ flag" loading="lazy">
+                                <span class="lang-name">Azərbaycan</span>
+                            </button>
+                            <button class="dropdown-item language-option" data-lang="ru">
+                                <img class="lang-flag" src="https://flagcdn.com/24x18/ru.png" alt="RU flag" loading="lazy">
+                                <span class="lang-name">Русский</span>
+                            </button>
+                            <button class="dropdown-item language-option" data-lang="en">
+                                <img class="lang-flag" src="https://flagcdn.com/24x18/gb.png" alt="EN flag" loading="lazy">
+                                <span class="lang-name">English</span>
+                            </button>
+                        </div>
+                    </div>
+                    <button class="theme-toggle" id="themeToggle" aria-label="Rəng rejimini dəyişdir" title="Rəng rejimi">
+                        <i class="bi bi-sun-fill" id="themeIcon"></i>
+                    </button>
+                    <a class="btn-login-nav desktop-only" href="login.php" data-i18n="nav.login">Daxil ol</a>
+                    
+                    <!-- Mobile Menu Toggle -->
+                    <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Menyu" aria-expanded="false" type="button">
+                        <span class="hamburger-line"></span>
+                        <span class="hamburger-line"></span>
+                        <span class="hamburger-line"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Menu Overlay -->
+            <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
+
+            <!-- Mobile Navigation -->
+            <div class="mobile-nav" id="mobileNav">
+                <nav class="mobile-nav-content">
+                    <div class="mobile-nav-item">
+                        <button class="mobile-nav-link" id="mobileServicesToggle">
+                            <span data-i18n="nav.services">Xidmətlər</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                        <div class="mobile-submenu" id="mobileServicesMenu">
+                            <a href="services/service-qr.html" class="mobile-submenu-item">QR Menyu</a>
+                            <a href="services/service-nfc.html" class="mobile-submenu-item">NFC</a>
+                            <a href="services/service-qrnfc.html" class="mobile-submenu-item">QR CODE + NFC</a>
+                        </div>
+                    </div>
+                    <a href="./#restaurants" class="mobile-nav-link" data-i18n="nav.restaurants">Restoranlar</a>
+                    <a href="https://wa.me/994507736216?text=Salam%2C%20Biz%C9%99%20BirMenu%20laz%C4%B1md%C4%B1r!" target="_blank" class="mobile-nav-link" data-i18n="nav.joinUs">Qoşul</a>
+                    <a href="login.php" class="mobile-nav-link" data-i18n="nav.login">Daxil ol</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Terms of Service Content -->
+    <section class="legal-page-section">
+        <div class="container">
+            <div class="legal-page-content">
+                <h1 data-i18n="legal.terms.title">İstifadə Şərtləri</h1>
+                <p class="last-updated" data-i18n="legal.lastUpdated">Son yenilənmə: 2025-ci il</p>
+
+                <div class="legal-section">
+                    <h2 data-i18n="legal.terms.section1.title">1. Qəbul</h2>
+                    <p data-i18n="legal.terms.section1.content">BirMenu platformasından istifadə edərkən, bu İstifadə Şərtlərini qəbul etmiş sayılırsınız. Əgər bu şərtlərlə razı deyilsinizsə, xidmətlərimizdən istifadə etməyin.</p>
+                </div>
+
+                <div class="legal-section">
+                    <h2 data-i18n="legal.terms.section2.title">2. Xidmətlərin Təsviri</h2>
+                    <p data-i18n="legal.terms.section2.content">BirMenu, restoranlar üçün rəqəmsal menyu həlləri təqdim edən bir platformadır. Xidmətlərimizə aşağıdakılar daxildir:</p>
+                    <ul>
+                        <li data-i18n="legal.terms.section2.item1">QR kod menyu sistemi</li>
+                        <li data-i18n="legal.terms.section2.item2">NFC kart menyu sistemi</li>
+                        <li data-i18n="legal.terms.section2.item3">Kombinə edilmiş QR + NFC həlləri</li>
+                        <li data-i18n="legal.terms.section2.item4">Admin panel idarəetmə sistemi</li>
+                        <li data-i18n="legal.terms.section2.item5">Məhsul və kateqoriya idarəetməsi</li>
+                    </ul>
+                </div>
+
+                <div class="legal-section">
+                    <h2 data-i18n="legal.terms.section3.title">3. İstifadəçi Hesabları</h2>
+                    <h3 data-i18n="legal.terms.section3.subtitle1">3.1. Hesab Yaratma</h3>
+                    <p data-i18n="legal.terms.section3.content1">Xidmətlərimizdən istifadə etmək üçün hesab yaratmalısınız. Hesab yaradarkən:</p>
+                    <ul>
+                        <li data-i18n="legal.terms.section3.item1">Dəqiq və aktual məlumatlar təqdim etməlisiniz</li>
+                        <li data-i18n="legal.terms.section3.item2">Hesab məlumatlarınızın təhlükəsizliyini təmin etməlisiniz</li>
+                        <li data-i18n="legal.terms.section3.item3">Hesabınızın istifadəsindən məsuliyyət daşıyırsınız</li>
+                    </ul>
+
+                    <h3 data-i18n="legal.terms.section3.subtitle2">3.2. Şifrə Təhlükəsizliyi</h3>
+                    <p data-i18n="legal.terms.section3.content2">Şifrənizi məxfi saxlamalı və üçüncü tərəflərlə paylaşmamalısınız. Şifrənizin oğurlanması və ya istifadəsi halında dərhal bizimlə əlaqə saxlayın.</p>
+                </div>
+
+                <div class="legal-section">
+                    <h2 data-i18n="legal.terms.section4.title">4. İstifadəçi Məsuliyyətləri</h2>
+                    <p data-i18n="legal.terms.section4.content">Xidmətlərimizdən istifadə edərkən:</p>
+                    <ul>
+                        <li data-i18n="legal.terms.section4.item1">Qanunlara və qaydalara riayət etməlisiniz</li>
+                        <li data-i18n="legal.terms.section4.item2">Başqalarının hüquqlarını pozmamalısınız</li>
+                        <li data-i18n="legal.terms.section4.item3">Zərərli və ya qanunsuz məzmun yükləməməlisiniz</li>
+                        <li data-i18n="legal.terms.section4.item4">Sistemin işləməsinə maneə törətməməlisiniz</li>
+                        <li data-i18n="legal.terms.section4.item5">Digər istifadəçilərin məlumatlarına qanunsuz daxil olmamalısınız</li>
+                    </ul>
+                </div>
+
+                <div class="legal-section">
+                    <h2 data-i18n="legal.terms.section5.title">5. Məzmun Məsuliyyəti</h2>
+                    <p data-i18n="legal.terms.section5.content">Yüklədiyiniz məzmun (məhsul şəkilləri, təsvirlər, qiymətlər və s.) üçün tam məsuliyyət daşıyırsınız. Biz:</p>
+                    <ul>
+                        <li data-i18n="legal.terms.section5.item1">Yüklənən məzmunun dəqiqliyini və qanuniliyini təmin etmirik</li>
+                        <li data-i18n="legal.terms.section5.item2">Məzmunun müəllif hüquqlarına uyğunluğunu yoxlamırıq</li>
+                        <li data-i18n="legal.terms.section5.item3">Qanunsuz və ya zərərli məzmunu silmək hüququnu özümüzdə saxlayırıq</li>
+                    </ul>
+                </div>
+
+                <div class="legal-section">
+                    <h2 data-i18n="legal.terms.section6.title">6. Müəllif Hüquqları</h2>
+                    <p data-i18n="legal.terms.section6.content">BirMenu platforması və onun bütün məzmunu müəllif hüquqları ilə qorunur. Platformanın məzmununu icazəsiz surətləmək, paylaşmaq və ya istifadə etmək qadağandır.</p>
+                </div>
+
+                <div class="legal-section">
+                    <h2 data-i18n="legal.terms.section7.title">7. Xidmətin Dəyişdirilməsi və Dayandırılması</h2>
+                    <p data-i18n="legal.terms.section7.content">Biz istənilən vaxt, xəbərdarlıq etmədən xidmətlərimizi dəyişdirmək, dayandırmaq və ya ləğv etmək hüququnu özümüzdə saxlayırıq. Texniki problemlər, təhlükəsizlik məsələləri və ya digər səbəblərə görə xidmətlər müvəqqəti olaraq dayandırıla bilər.</p>
+                </div>
+
+                <div class="legal-section">
+                    <h2 data-i18n="legal.terms.section8.title">8. Ödənişlər</h2>
+                    <p data-i18n="legal.terms.section8.content">Bəzi xidmətlərimiz pullu ola bilər. Ödəniş şərtləri ayrıca müqavilədə müəyyən edilir. Ödənişlərin geri qaytarılması halında, müvafiq siyasətimizə əsasən hərəkət edilir.</p>
+                </div>
+
+                <div class="legal-section">
+                    <h2 data-i18n="legal.terms.section9.title">9. Zəmanət İnkarı</h2>
+                    <p data-i18n="legal.terms.section9.content">Xidmətlərimiz "olduğu kimi" təqdim olunur. Biz heç bir zəmanət vermirik ki:</p>
+                    <ul>
+                        <li data-i18n="legal.terms.section9.item1">Xidmətlər fasiləsiz və ya xətasız olacaq</li>
+                        <li data-i18n="legal.terms.section9.item2">Xidmətlərdən istifadə nəticəsində əldə ediləcək nəticələr müəyyən olunacaq</li>
+                        <li data-i18n="legal.terms.section9.item3">Xidmətlərdəki xətalar düzəldiləcək</li>
+                    </ul>
+                </div>
+
+                <div class="legal-section">
+                    <h2 data-i18n="legal.terms.section10.title">10. Məsuliyyətin Məhdudlaşdırılması</h2>
+                    <p data-i18n="legal.terms.section10.content">BirMenu, xidmətlərimizdən istifadə nəticəsində yaranan bilavasitə, dolayı, təsadüfi və ya nəticəvi zərərlərə görə məsuliyyət daşımır. Buraya məlumat itkisi, qazanc itkisi və ya digər maliyyə itkiləri daxildir.</p>
+                </div>
+
+                <div class="legal-section">
+                    <h2 data-i18n="legal.terms.section11.title">11. Hesabın Ləğv Edilməsi</h2>
+                    <p data-i18n="legal.terms.section11.content">Biz istənilən vaxt, səbəb göstərmədən istifadəçi hesablarını ləğv etmək və ya xidmətlərdən istifadəni məhdudlaşdırmaq hüququnu özümüzdə saxlayırıq. Xüsusilə:</p>
+                    <ul>
+                        <li data-i18n="legal.terms.section11.item1">İstifadə şərtlərinin pozulması halında</li>
+                        <li data-i18n="legal.terms.section11.item2">Qanunsuz fəaliyyət halında</li>
+                        <li data-i18n="legal.terms.section11.item3">Digər istifadəçilərin hüquqlarının pozulması halında</li>
+                    </ul>
+                </div>
+
+                <div class="legal-section">
+                    <h2 data-i18n="legal.terms.section12.title">12. Dəyişikliklər</h2>
+                    <p data-i18n="legal.terms.section12.content">Bu İstifadə Şərtlərini istənilən vaxt yeniləyə bilərik. Dəyişikliklər veb-saytda yayımlandıqdan sonra qüvvəyə minir. Dəyişikliklərdən sonra xidmətlərimizdən istifadəyə davam etməklə, yeni şərtləri qəbul etmiş sayılırsınız.</p>
+                </div>
+
+                <div class="legal-section">
+                    <h2 data-i18n="legal.terms.section13.title">13. Mübahisələrin Həlli</h2>
+                    <p data-i18n="legal.terms.section13.content">Bu şərtlərlə bağlı yaranan mübahisələr Azərbaycan Respublikasının qanunlarına uyğun olaraq həll edilir. Mübahisələrin həlli üçün ilk növbədə danışıqlar aparılmalıdır.</p>
+                </div>
+
+                <div class="legal-section">
+                    <h2 data-i18n="legal.terms.section14.title">14. Əlaqə</h2>
+                    <p data-i18n="legal.terms.section14.content">İstifadə Şərtləri ilə bağlı suallarınız varsa, bizimlə əlaqə saxlayın:</p>
+                    <ul>
+                        <li><strong data-i18n="legal.terms.section14.email">E-poçt:</strong> info@1menu.az</li>
+                        <li><strong data-i18n="legal.terms.section14.phone">Telefon:</strong> +994 50 773 62 16</li>
+                        <li><strong data-i18n="legal.terms.section14.address">Ünvan:</strong> Bakı, Azərbaycan</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="modern-footer">
+        <div class="container">
+            <div class="footer-main">
+                <div class="footer-column footer-about">
+                    <div class="footer-logo">
+                        <img src="assets/images/logo.png" alt="BirMenu Logo" id="footerLogo">
+                    </div>
+                    <p class="footer-description" data-i18n="footer.description">Restoran biznesinizi rəqəmsal menyu həlləri ilə modernləşdirin. Müştərilərinizə QR kod və NFC texnologiyası ilə ən yaxşı təcrübəni təqdim edin.</p>
+                    <div class="footer-social">
+                        <a href="mailto:info@1menu.az" class="social-link" title="Email">
+                            <i class="bi bi-envelope-fill"></i>
+                        </a>
+                        <a href="https://wa.me/994507736216" target="_blank" class="social-link" title="WhatsApp">
+                            <i class="bi bi-whatsapp"></i>
+                        </a>
+                        <a href="tel:+994507736216" class="social-link" title="Telefon">
+                            <i class="bi bi-telephone-fill"></i>
+                        </a>
+                        <a href="#" class="social-link" title="Instagram">
+                            <i class="bi bi-instagram"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="footer-column">
+                    <h4 class="footer-title" data-i18n="footer.services">Xidmətlər</h4>
+                    <ul class="footer-links">
+                        <li><a href="services/service-qr.html"><i class="bi bi-qr-code"></i> <span data-i18n="footer.qrMenu">QR Menyu</span></a></li>
+                        <li><a href="services/service-nfc.html"><i class="bi bi-broadcast"></i> <span data-i18n="footer.nfcCard">NFC Kart</span></a></li>
+                        <li><a href="services/service-qrnfc.html"><i class="bi bi-layers-fill"></i> <span data-i18n="footer.combo">QR + NFC</span></a></li>
+                        <li><a href="admin/restaurant_admin"><i class="bi bi-speedometer2"></i> <span data-i18n="footer.adminPanel">Admin Panel</span></a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-column">
+                    <h4 class="footer-title" data-i18n="footer.quickLinks">Sürətli Keçidlər</h4>
+                    <ul class="footer-links">
+                        <li><a href="./"><i class="bi bi-house"></i> <span data-i18n="footer.home">Ana Səhifə</span></a></li>
+                        <li><a href="./#services"><i class="bi bi-grid"></i> <span data-i18n="footer.ourServices">Xidmətlərimiz</span></a></li>
+                        <li><a href="./#restaurants"><i class="bi bi-shop"></i> <span data-i18n="footer.ourRestaurants">Restoranlarımız</span></a></li>
+                        <li><a href="login.php"><i class="bi bi-box-arrow-in-right"></i> <span data-i18n="nav.login">Daxil ol</span></a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-column">
+                    <h4 class="footer-title" data-i18n="footer.contact">Əlaqə</h4>
+                    <ul class="footer-contact">
+                        <li>
+                            <i class="bi bi-geo-alt-fill"></i>
+                            <span data-i18n="footer.address">Bakı, Azərbaycan</span>
+                        </li>
+                        <li>
+                            <i class="bi bi-telephone-fill"></i>
+                            <a href="tel:+994507736216">+994 50 773 62 16</a>
+                        </li>
+                        <li>
+                            <i class="bi bi-envelope-fill"></i>
+                            <a href="mailto:info@1menu.az">info@1menu.az</a>
+                        </li>
+                        <li>
+                            <i class="bi bi-clock-fill"></i>
+                            <span data-i18n="footer.support24">24/7 Dəstək</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div class="footer-bottom-content">
+                    <p class="footer-copyright">
+                        © 2025 <strong>BirMenu</strong>. <span data-i18n="footer.copyright">Bütün hüquqlar qorunur.</span>
+                    </p>
+                    <div class="footer-bottom-links">
+                        <a href="privacy-policy" data-i18n="footer.privacy">Məxfilik Siyasəti</a>
+                        <span class="separator">•</span>
+                        <a href="terms-of-service" data-i18n="footer.terms">İstifadə Şərtləri</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Translations -->
+    <script src="assets/js/translations.js"></script>
+    <!-- Custom JS -->
+    <script src="assets/js/script.js"></script>
+    <script>
+        // Update page title on language change
+        function updatePageTitle() {
+            if (i18next && i18next.isInitialized) {
+                const title = i18next.t('legal.terms.title');
+                if (title && title !== 'legal.terms.title') {
+                    document.title = title + ' - BirMenu';
+                }
+            }
+        }
+        
+        // Initialize and update translations
+        if (typeof initTranslations === 'function') {
+            initTranslations();
+        }
+        
+        // Update title when language changes
+        if (i18next) {
+            i18next.on('languageChanged', updatePageTitle);
+        }
+        
+        // Initial title update
+        setTimeout(updatePageTitle, 100);
+    </script>
+</body>
+</html>
+

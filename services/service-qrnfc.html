@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Menyu + NFC - BirMenu</title>
+    <link rel="icon" type="image/png" href="../assets/images/favicon.png">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Google Fonts - Formal & Elegant -->
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;0,6..96,700;1,6..96,400&display=swap" rel="stylesheet">
+    <!-- AOS Animation Library -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <!-- i18next for translations -->
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23.7.6/i18next.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="header-section">
+        <div class="container">
+            <div class="header-inner">
+                <div class="header-left">
+                    <a class="navbar-logo" href="../" aria-label="Ana səhifə">
+                        <img id="navbarLogo" src="../assets/images/logo.png" alt="Logo">
+                    </a>
+                </div>
+                
+                <!-- Desktop Navigation -->
+                <nav class="main-nav desktop-nav" aria-label="Ana Naviqasiya">
+                    <div class="nav-item dropdown services-dropdown">
+                        <a class="nav-link dropdown-toggle" href="../#services" id="servicesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" data-i18n="nav.services">
+                            <!-- Translated text will be inserted here -->
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="servicesDropdown">
+                            <li><a class="dropdown-item" href="service-qr.html">QR Menyu</a></li>
+                            <li><a class="dropdown-item" href="service-nfc.html">NFC</a></li>
+                            <li><a class="dropdown-item" href="service-qrnfc.html">QR CODE + NFC</a></li>
+                        </ul>
+                    </div>
+                    <a href="../#restaurants" data-i18n="nav.restaurants"></a>
+                </nav>
+
+                <div class="header-right">
+                    <a class="btn-join desktop-only" href="https://wa.me/994515103402?text=Salam%2C%20Biz%C9%99%20BirMenu%20laz%C4%B1md%C4%B1r!" target="_blank" data-i18n="nav.joinUs"></a>
+                    <!-- Language Dropdown -->
+                    <div class="dropdown language-dropdown">
+                        <button class="dropdown-toggle" id="languageDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                            <img class="lang-flag" id="currentLangFlag" src="https://flagcdn.com/24x18/az.png" alt="AZ flag" loading="lazy">
+                            <span class="lang-text" id="currentLangText">AZ</span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end" id="languageDropdownMenu" aria-labelledby="languageDropdownBtn">
+                            <button class="dropdown-item language-option active" data-lang="az">
+                                <img class="lang-flag" src="https://flagcdn.com/24x18/az.png" alt="AZ flag" loading="lazy">
+                                <span class="lang-name">Azərbaycan</span>
+                            </button>
+                            <button class="dropdown-item language-option" data-lang="ru">
+                                <img class="lang-flag" src="https://flagcdn.com/24x18/ru.png" alt="RU flag" loading="lazy">
+                                <span class="lang-name">Русский</span>
+                            </button>
+                            <button class="dropdown-item language-option" data-lang="en">
+                                <img class="lang-flag" src="https://flagcdn.com/24x18/gb.png" alt="EN flag" loading="lazy">
+                                <span class="lang-name">English</span>
+                            </button>
+                        </div>
+                    </div>
+                    <button class="theme-toggle" id="themeToggle" aria-label="Rəng rejimini dəyişdir" title="Rəng rejimi">
+                        <i class="bi bi-sun-fill" id="themeIcon"></i>
+                    </button>
+                    <a class="btn-login-nav desktop-only" href="../login.php" data-i18n="nav.login"></a>
+                    
+                    <!-- Mobile Menu Toggle -->
+                    <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Menyu" aria-expanded="false" type="button">
+                        <span class="hamburger-line"></span>
+                        <span class="hamburger-line"></span>
+                        <span class="hamburger-line"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Menu Overlay -->
+            <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
+
+            <!-- Mobile Navigation -->
+            <div class="mobile-nav" id="mobileNav">
+                <nav class="mobile-nav-content">
+                    <div class="mobile-nav-item">
+                        <button class="mobile-nav-link" id="mobileServicesToggle">
+                            <span data-i18n="nav.services"></span>
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                        <div class="mobile-submenu" id="mobileServicesMenu">
+                            <a href="service-qr.html" class="mobile-submenu-item">QR Menyu</a>
+                            <a href="service-nfc.html" class="mobile-submenu-item">NFC</a>
+                            <a href="service-qrnfc.html" class="mobile-submenu-item">QR CODE + NFC</a>
+                        </div>
+                    </div>
+                    <a href="../#restaurants" class="mobile-nav-link" data-i18n="nav.restaurants"></a>
+                    <div class="mobile-nav-divider"></div>
+                    <a href="https://wa.me/994515103402?text=Salam%2C%20Biz%C9%99%20BirMenu%20laz%C4%B1md%C4%B1r!" target="_blank" class="mobile-nav-link mobile-nav-cta">
+                        <i class="bi bi-plus-circle"></i>
+                        <span data-i18n="nav.joinUs"></span>
+                    </a>
+                    <a href="../login.php" class="mobile-nav-link">
+                        <i class="bi bi-box-arrow-in-right"></i>
+                        <span data-i18n="nav.login"></span>
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Service Detail Hero -->
+    <section class="service-detail-hero">
+        <div class="container">
+            <div class="service-hero-content" data-aos="fade-up" data-aos-duration="800">
+                <div class="service-icon-large">
+                    <i class="bi bi-layers-fill"></i>
+                </div>
+                <h1>QR Menyu + NFC</h1>
+                <p class="lead">İki texnologiya bir arada. İstər skan edin, istər yaxınlaşdırın - seçim sizindir!</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Service Details -->
+    <section class="service-details-section">
+        <div class="container">
+            <div class="row g-5">
+                <div class="col-lg-8">
+                    <div class="service-content" data-aos="fade-up" data-aos-duration="600">
+                        <h2>Hibrid Həll - QR + NFC</h2>
+                        <p>Hər müştərinin öz seçimi var. Bəziləri QR kod skan etməyi üstün tutur, digərləri isə NFC-nin sürət və rahatlığını seçir. Bizim hibrid həllimiz hər iki texnologiyanı bir yerdə təqdim edir - maksimum rahatlıq və əhatə üçün.</p>
+                        
+                        <div class="feature-highlight">
+                            <h3>Niyə Hibrid Həll?</h3>
+                            <ul class="feature-list">
+                                <li>
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <div>
+                                        <strong>Universal əlçatanlıq</strong>
+                                        <p>Bütün müştərilər öz istədikləri üsulla menyuya baxa bilərlər</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <div>
+                                        <strong>Ehtiyat variantı</strong>
+                                        <p>Bir üsul işləməzsə, həmişə alternativ mövcuddur</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <div>
+                                        <strong>Premium təəssürat</strong>
+                                        <p>Müasir texnologiyaların hər ikisini təklif edərək müştərilərinizi heyran edin</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <div>
+                                        <strong>Maksimum rahatlıq</strong>
+                                        <p>Köhnə və yeni telefonlar üçün mükəmməl işləyir</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <div>
+                                        <strong>Gələcəyə hazır</strong>
+                                        <p>Texnologiya inkişaf etdikcə sizin sisteminiz də hazırdır</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <div>
+                                        <strong>Ən yaxşı investisiya</strong>
+                                        <p>Hər iki texnologiyanın üstünlüklərindən faydalanın</p>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <h3>Necə işləyir?</h3>
+                        <div class="steps-grid">
+                            <div class="step-card" data-aos="fade-up" data-aos-delay="100">
+                                <div class="step-number">1</div>
+                                <h4>Hibrid Etiket</h4>
+                                <p>QR kod və NFC çipini özündə birləşdirən xüsusi etiketlər yerləşdirilir</p>
+                            </div>
+                            <div class="step-card" data-aos="fade-up" data-aos-delay="200">
+                                <div class="step-number">2</div>
+                                <h4>Müştəri Seçir</h4>
+                                <p>Müştərilər QR kodu skan edə və ya telefonu NFC zonasına yaxınlaşdıra bilərlər</p>
+                            </div>
+                            <div class="step-card" data-aos="fade-up" data-aos-delay="300">
+                                <div class="step-number">3</div>
+                                <h4>Eyni Nəticə</h4>
+                                <p>Hər iki üsulla eyni rəqəmsal menyu açılır - sadə və effektiv</p>
+                            </div>
+                        </div>
+
+                        <div class="comparison-section mt-5" data-aos="fade-up">
+                            <h3>Texnologiya Müqayisəsi</h3>
+                            <div class="comparison-grid">
+                                <div class="comparison-card">
+                                    <div class="comparison-header">
+                                        <i class="bi bi-qr-code"></i>
+                                        <h4>Yalnız QR</h4>
+                                    </div>
+                                    <ul>
+                                        <li><i class="bi bi-check2"></i> Bütün telefonlarda işləyir</li>
+                                        <li><i class="bi bi-check2"></i> Skan etmək lazımdır</li>
+                                        <li><i class="bi bi-check2"></i> Universal dəstək</li>
+                                        <li><i class="bi bi-x text-muted"></i> NFC yoxdur</li>
+                                    </ul>
+                                </div>
+                                <div class="comparison-card">
+                                    <div class="comparison-header">
+                                        <i class="bi bi-broadcast"></i>
+                                        <h4>Yalnız NFC</h4>
+                                    </div>
+                                    <ul>
+                                        <li><i class="bi bi-check2"></i> Çox sürətli</li>
+                                        <li><i class="bi bi-check2"></i> Sadəcə yaxınlaşdırın</li>
+                                        <li><i class="bi bi-x text-muted"></i> Köhnə telefonlarda işləməz</li>
+                                        <li><i class="bi bi-check2"></i> Premium hiss</li>
+                                    </ul>
+                                </div>
+                                <div class="comparison-card featured">
+                                    <div class="comparison-header">
+                                        <i class="bi bi-layers-fill"></i>
+                                        <h4>QR + NFC</h4>
+                                        <span class="badge">Ən yaxşı</span>
+                                    </div>
+                                    <ul>
+                                        <li><i class="bi bi-check2"></i> Hər iki üsul mövcuddur</li>
+                                        <li><i class="bi bi-check2"></i> Maksimum əhatə</li>
+                                        <li><i class="bi bi-check2"></i> Müştəri seçimi</li>
+                                        <li><i class="bi bi-check2"></i> Gələcəyə hazır</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="service-sidebar">
+                        <div class="sidebar-card" data-aos="fade-left" data-aos-duration="600">
+                            <h4>Digər Xidmətlər</h4>
+                            <div class="sidebar-links">
+                                <a href="service-qr.html" class="sidebar-link">
+                                    <i class="bi bi-qr-code"></i>
+                                    <span>QR Menyu</span>
+                                    <i class="bi bi-arrow-right"></i>
+                                </a>
+                                <a href="service-nfc.html" class="sidebar-link">
+                                    <i class="bi bi-broadcast"></i>
+                                    <span>NFC</span>
+                                    <i class="bi bi-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="sidebar-card cta-card" data-aos="fade-left" data-aos-duration="600" data-aos-delay="200">
+                            <h4>Bizə qoşulun</h4>
+                            <p>Hibrid həllimiz haqqında daha ətraflı məlumat üçün bizimlə əlaqə saxlayın</p>
+                            <a href="../#contact" class="btn btn-primary w-100">
+                                <i class="bi bi-envelope"></i> Əlaqə saxlayın
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Scroll to Top Button -->
+
+    <footer class="simple-footer">
+        <p>© 2025 BIRMENU. Bütün hüquqlar qorunur.</p>
+    </footer>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- AOS Animation Library -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <!-- Translations -->
+    <script src="../assets/js/translations.js"></script>
+    <!-- Custom JS -->
+    <script src="../assets/js/script.js"></script>
+    <script>
+        // Initialize AOS
+        AOS.init({
+            duration: 600,
+            easing: 'ease-out',
+            once: true,
+            offset: 50
+        });
+    </script>
+</body>
+</html>
+

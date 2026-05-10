@@ -1,0 +1,136 @@
+# ========================================
+# BirMenu - Apache Configuration
+# ========================================
+
+# PHP Settings for Import/Upload
+<IfModule mod_php7.c>
+    # Increase execution time for large imports
+    php_value max_execution_time 600
+    php_value max_input_time 600
+    
+    # Increase memory limit
+    php_value memory_limit 512M
+    
+    # Increase upload limits for large restaurant imports
+    php_value upload_max_filesize 100M
+    php_value post_max_size 100M
+    
+    # Increase max input vars (for forms with many fields)
+    php_value max_input_vars 5000
+</IfModule>
+
+# PHP 8.x Settings
+<IfModule mod_php8.c>
+    php_value max_execution_time 600
+    php_value max_input_time 600
+    php_value memory_limit 512M
+    php_value upload_max_filesize 100M
+    php_value post_max_size 100M
+    php_value max_input_vars 5000
+</IfModule>
+
+# Enable Gzip Compression for faster loading
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript
+    AddOutputFilterByType DEFLATE application/javascript application/json application/xml application/rss+xml
+    AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+# Browser Caching for static files
+<IfModule mod_expires.c>
+    ExpiresActive On
+    
+    # Images
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/jpg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/webp "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    
+    # CSS and JavaScript
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType text/javascript "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+    
+    # Fonts
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/ttf "access plus 1 year"
+</IfModule>
+
+# Security Headers
+<IfModule mod_headers.c>
+    # Prevent clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+    
+    # XSS Protection
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # Content Type Options
+    Header always set X-Content-Type-Options "nosniff"
+    
+    # Referrer Policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Disable Directory Listing
+Options -Indexes
+
+# Error Pages (Optional)
+# ErrorDocument 404 /404.html
+# ErrorDocument 500 /500.html
+
+# Protect sensitive files
+<FilesMatch "^(config\.php|\.env|\.git|composer\.(json|lock))$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Clean URLs (no .php / .html in browser)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /birmenu/
+
+    # Real files and directories: do nothing
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Redirect old .php/.html URLs to clean URLs (optional: uncomment to force clean URLs)
+    # RewriteCond %{THE_REQUEST} \s/birmenu/(.+?)\.php[\s?] [NC]
+    # RewriteRule ^ %1 [R=301,L]
+    # RewriteCond %{THE_REQUEST} \s/birmenu/(.+?)\.html[\s?] [NC]
+    # RewriteRule ^ %1 [R=301,L]
+
+    # Root and index (clean URL)
+    RewriteRule ^$ index.html [L]
+    RewriteRule ^index$ index.html [L]
+
+    # PHP pages (clean URL -> file)
+    RewriteRule ^login$ login.php [L]
+    RewriteRule ^admin$ admin/admin.php [L]
+    RewriteRule ^admin/restaurant_admin$ admin/restaurant_admin.php [L,QSA]
+    RewriteRule ^admin/menu_manager$ admin/menu_manager.php [L,QSA]
+    RewriteRule ^admin/login$ admin/admin_login.php [L]
+
+    # HTML pages (clean URL -> file)
+    RewriteRule ^privacy-policy$ privacy-policy.html [L]
+    RewriteRule ^terms-of-service$ terms-of-service.html [L]
+    RewriteRule ^services/service-qr$ services/service-qr.html [L]
+    RewriteRule ^services/service-nfc$ services/service-nfc.html [L]
+    RewriteRule ^services/service-qrnfc$ services/service-qrnfc.html [L]
+
+    # Allow direct access to uploaded files
+    RewriteRule ^uploads/(.*)$ uploads/$1 [L]
+
+    # Prevent access to PHP files in uploads folder (security)
+    RewriteCond %{REQUEST_URI} \.php$ [NC]
+    RewriteRule ^uploads/ - [F,L]
+</IfModule>
+
+
+
+
+
+

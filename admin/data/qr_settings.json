@@ -1,0 +1,8 @@
+{
+    "logo_option": "logo_light",
+    "logo_path": "assets\/images\/logo.png",
+    "corner_radius": "large",
+    "qr_color": "af3131",
+    "qr_bgcolor": "ffffff",
+    "style": "custom"
+}

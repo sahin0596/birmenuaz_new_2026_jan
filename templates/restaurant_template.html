@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{RESTAURANT_NAME}} - BirMenu</title>
+    {{FAVICON}}
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- i18next for translations -->
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23.7.6/i18next.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../assets/css/style.css">
+    
+    <!-- Minimalist Loading Screen Styles (B&W) -->
+    <style>
+        .birmenu-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+        .birmenu-loader.loaded {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        .loader-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 32px;
+        }
+        .loader-logo {
+            opacity: 0;
+            animation: loaderFadeIn 0.6s ease 0.2s forwards;
+        }
+        .loader-logo img {
+            height: 40px;
+            width: auto;
+        }
+        @keyframes loaderFadeIn {
+            to { opacity: 1; }
+        }
+        .loader-progress {
+            width: 120px;
+            height: 2px;
+            background: #e5e5e5;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .loader-progress-bar {
+            height: 100%;
+            width: 0;
+            background: #000;
+            border-radius: 2px;
+            animation: loaderProgress 1s ease forwards;
+        }
+        @keyframes loaderProgress {
+            0% { width: 0; }
+            100% { width: 100%; }
+        }
+        @media (max-width: 480px) {
+            .loader-logo img { height: 34px; }
+            .loader-progress { width: 100px; }
+        }
+    </style>
+</head>
+<body class="restaurant-page">
+    <!-- Minimalist Loading Screen (B&W) -->
+    <div class="birmenu-loader" id="birmenuLoader">
+        <div class="loader-content">
+            <div class="loader-logo">
+                <img src="../assets/images/logo.png" alt="BirMenu">
+            </div>
+            <div class="loader-progress">
+                <div class="loader-progress-bar"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        (function() {
+            var loader = document.getElementById('birmenuLoader');
+            if (loader) {
+                setTimeout(function() {
+                    loader.classList.add('loaded');
+                    setTimeout(function() { loader.remove(); }, 600);
+                }, 1000);
+            }
+        })();
+    </script>
+
+    <!-- Site Logo Topbar -->
+    <header class="site-topbar">
+        <div class="container">
+            <div class="topbar-inner">
+                <a href="../" class="site-logo-link" aria-label="BirMenu ana səhifə">
+                    <img src="../assets/images/logo.png" alt="BirMenu Logo" id="topbarLogo">
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Restaurant Header -->
+    <section class="restaurant-header-section" style="{{COVER_BACKGROUND}}">
+        <div class="restaurant-header-overlay"></div>
+        
+        <!-- Language Selector -->
+        <div class="language-selector-wrapper">
+            <button class="language-selector-btn" type="button" id="languageBtn">
+                <span class="current-flag" id="currentFlag">🇦🇿</span>
+            </button>
+            <div class="language-dropdown-menu" id="languageMenu" style="display: none;">
+                <a class="language-item active" href="#" data-lang="az" data-flag="🇦🇿">
+                    <span class="flag-icon">🇦🇿</span> Azərbaycan
+                </a>
+                <a class="language-item" href="#" data-lang="en" data-flag="🇬🇧">
+                    <span class="flag-icon">🇬🇧</span> English
+                </a>
+                <a class="language-item" href="#" data-lang="ru" data-flag="🇷🇺">
+                    <span class="flag-icon">🇷🇺</span> Русский
+                </a>
+            </div>
+        </div>
+        
+        <div class="container" style="position: relative; z-index: 2;">
+            <!-- Logo -->
+            <div class="restaurant-logo-wrapper text-center">
+                {{LOGO}}
+                <h1 class="restaurant-name-header">{{RESTAURANT_NAME}}</h1>
+                <div class="restaurant-header-info">
+                    <div class="restaurant-info-cards">
+                        {{RESTAURANT_ADDRESS}}
+                        {{RESTAURANT_PHONE}}
+                        {{RESTAURANT_WIFI}}
+                    </div>
+                </div>
+                <div class="restaurant-header-social">
+                    <div class="restaurant-social-links-minimal">{{SOCIAL_MEDIA_LINKS}}</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Inactive Restaurant Message -->
+    <div id="inactiveRestaurantMessage" style="display: none;">
+        <div class="inactive-message-container">
+            <div class="maintenance-animation">
+                <div class="restaurant-logo-circle">
+                    {{LOGO}}
+                </div>
+                <div class="exclamation-mark">
+                    <span class="exclamation-text">!</span>
+                </div>
+            </div>
+            <h2 class="inactive-message-title" data-i18n="inactiveTitle">Restoran müvəqqəti olaraq deaktivdir</h2>
+            <p class="inactive-message-text" data-i18n="inactiveDescription">Bu restoran hazırda fəaliyyət göstərmir. Zəhmət olmasa, daha sonra yenidən yoxlayın.</p>
+        </div>
+    </div>
+
+    <!-- Category Filters -->
+    <section class="category-filters-section" id="categoryFiltersSection">
+        <div class="container category-filters-container">
+            <div class="category-search-inline" id="categorySearchInline" aria-hidden="true">
+                <div class="category-search-inline-wrapper">
+                    <i class="bi bi-search"></i>
+                    <input type="text" id="searchInput" placeholder="Menyuda axtar..." class="search-input" data-i18n-placeholder="searchPlaceholder" autocomplete="off">
+                    <button type="button" class="category-search-close" id="categorySearchClose" title="Bağla" aria-label="Bağla"><i class="bi bi-x-lg"></i></button>
+                </div>
+            </div>
+            <div class="category-filters-scroll" id="categoryFilters">
+                <button type="button" class="category-filter-btn category-search-btn" id="categorySearchBtn" data-action="search" title="Axtarış" aria-label="Axtarış">
+                    <i class="bi bi-search"></i>
+                </button>
+                <!-- Categories will be loaded dynamically here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Menu Items -->
+    <section class="menu-items-section">
+        <div class="container">
+            <div class="row g-3 g-md-4" id="menuItems">
+                <!-- Loading state -->
+                <div class="col-12 text-center loading-state">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden" data-i18n="loading">Yüklənir...</span>
+                    </div>
+                    <p class="mt-3 text-muted" data-i18n="loadingMenu">Menyu yüklənir...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Cart Panel - Hidden -->
+    <div class="cart-panel" id="cartPanel" style="display: none;">
+        <div class="cart-header">
+            <h3 class="cart-title" data-i18n="cartTitle">Sifarişlərim</h3>
+            <button class="cart-close-btn" id="closeCart" title="Bağla" data-i18n-title="close">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <div class="cart-items" id="cartItems">
+            <div class="cart-empty">
+                <i class="bi bi-cart-x"></i>
+                <p data-i18n="cartEmpty">Səbət boşdur</p>
+            </div>
+        </div>
+        <div class="cart-footer">
+            <div class="cart-total">
+                <span data-i18n="total">Ümumi:</span>
+                <span class="cart-total-price" id="cartTotal">0.00 ₼</span>
+            </div>
+            <button class="btn-checkout" id="checkoutBtn" disabled data-i18n="confirmOrder">
+                Sifarişi təsdiqlə
+            </button>
+        </div>
+    </div>
+
+    <!-- Cart Button - Hidden -->
+    <div class="cart-button-container" id="cartButtonContainer" style="display: none;">
+        <button class="cart-button ripple pulse-animation" id="cartButton">
+            <i class="bi bi-cart3"></i>
+            <span class="cart-count bounce-in" id="cartCount">0</span>
+            <span class="cart-button-text" data-i18n="viewOrders">Sifarişlərimə bax</span>
+        </button>
+    </div>
+
+    <footer class="simple-footer">
+        <div class="restaurant-footer-content">
+            <div class="restaurant-footer-top">
+                <a href="../" class="restaurant-footer-logo">
+                    <img src="../assets/images/logo.png" alt="BirMenu Logo" id="footerLogo">
+                </a>
+                <div class="restaurant-footer-social">
+                    <a href="https://www.instagram.com/birmenu.az/" target="_blank" class="restaurant-footer-social-link" title="Instagram">
+                        <i class="bi bi-instagram"></i>
+                    </a>
+                    <a href="https://wa.me/994515103402" target="_blank" class="restaurant-footer-social-link" title="WhatsApp">
+                        <i class="bi bi-whatsapp"></i>
+                    </a>
+                    <a href="mailto:info@1menu.az" class="restaurant-footer-social-link" title="Email">
+                        <i class="bi bi-envelope-fill"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="restaurant-footer-bottom">
+                <p class="restaurant-footer-copyright">
+                    © 2026 <strong>BirMenu</strong>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Translations -->
+    <script src="../assets/js/translations.js"></script>
+    
+    <script>
+        const RESTAURANT_ID = {{RESTAURANT_ID}};
+        const RESTAURANT_SLUG = '{{RESTAURANT_SLUG}}';
+        
+        // Calculate base path dynamically
+        function getBasePath() {
+            const path = window.location.pathname;
+            const pathParts = path.split('/').filter(p => p);
+            // Remove restaurant slug and index.html
+            if (pathParts.length >= 2 && pathParts[pathParts.length - 1] === 'index.html') {
+                pathParts.pop(); // Remove index.html
+                pathParts.pop(); // Remove restaurant slug
+            }
+            // Build base path
+            const basePath = pathParts.length > 0 ? '/' + pathParts.join('/') + '/' : '/';
+            return basePath;
+        }
+        
+        const BASE_PATH = getBasePath();
+        
+        // Helper function to clean path - ensure restaurant slug is in path exactly once
+        // New format: /birmenu/restaurant-slug/uploads/covers/filename.jpg
+        function cleanImagePath(path) {
+            if (!path) return path;
+            
+            // Remove query parameters first
+            const [pathPart, queryPart] = path.split('?');
+            const query = queryPart ? '?' + queryPart : '';
+            
+            // Normalize path - remove leading/trailing slashes and normalize separators
+            let normalizedPath = pathPart.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/^\/+|\/+$/g, '');
+            
+            // Split path into parts
+            const parts = normalizedPath.split('/').filter(p => p);
+            
+            if (parts.length === 0) return path;
+            
+            // Get base path parts (e.g., ['birmenu'])
+            const baseParts = BASE_PATH.split('/').filter(p => p);
+            
+            // Find uploads index
+            const uploadsIndex = parts.indexOf('uploads');
+            if (uploadsIndex === -1) {
+                // No uploads found, return as is (might be a different type of path)
+                return pathPart.startsWith('/') ? pathPart + query : '/' + pathPart + query;
+            }
+            
+            // Get parts before uploads
+            const beforeUploads = parts.slice(0, uploadsIndex);
+            const afterUploads = parts.slice(uploadsIndex);
+            
+            // Remove ALL duplicate restaurant slugs from beforeUploads
+            const cleanedBeforeUploads = [];
+            let slugFound = false;
+            for (let i = 0; i < beforeUploads.length; i++) {
+                if (beforeUploads[i] === RESTAURANT_SLUG) {
+                    if (!slugFound) {
+                        cleanedBeforeUploads.push(beforeUploads[i]);
+                        slugFound = true;
+                    }
+                    // Skip all subsequent duplicates
+                } else {
+                    cleanedBeforeUploads.push(beforeUploads[i]);
+                }
+            }
+            
+            // Check if we need to add base path
+            const basePartsCount = baseParts.length;
+            const cleanedCount = cleanedBeforeUploads.length;
+            
+            // Build the correct path structure
+            let finalParts = [];
+            
+            // Add base parts if they're missing
+            if (cleanedCount < basePartsCount) {
+                // Missing base parts, add them
+                finalParts = [...baseParts];
+            } else if (cleanedCount === basePartsCount) {
+                // Has base parts, check if they match
+                let baseMatches = true;
+                for (let i = 0; i < basePartsCount; i++) {
+                    if (cleanedBeforeUploads[i] !== baseParts[i]) {
+                        baseMatches = false;
+                        break;
+                    }
+                }
+                if (baseMatches) {
+                    finalParts = [...cleanedBeforeUploads];
+                } else {
+                    // Base doesn't match, replace with correct base
+                    finalParts = [...baseParts];
+                }
+            } else {
+                // More parts than base, check if base matches
+                let baseMatches = true;
+                for (let i = 0; i < basePartsCount; i++) {
+                    if (cleanedBeforeUploads[i] !== baseParts[i]) {
+                        baseMatches = false;
+                        break;
+                    }
+                }
+                if (baseMatches) {
+                    // Base matches, use cleaned parts
+                    finalParts = [...cleanedBeforeUploads];
+                } else {
+                    // Base doesn't match, use correct base + slug
+                    finalParts = [...baseParts];
+                }
+            }
+            
+            // Ensure restaurant slug is present exactly once after base
+            const slugIndex = finalParts.length;
+            if (slugIndex < finalParts.length && finalParts[slugIndex] === RESTAURANT_SLUG) {
+                // Slug already present at correct position
+            } else {
+                // Check if slug is already in finalParts (shouldn't be if logic is correct)
+                const hasSlug = finalParts.includes(RESTAURANT_SLUG);
+                if (!hasSlug && RESTAURANT_SLUG) {
+                    finalParts.push(RESTAURANT_SLUG);
+                }
+            }
+            
+            // Reconstruct the path
+            const correctedPath = '/' + finalParts.join('/') + '/' + afterUploads.join('/') + query;
+            
+            // Remove any double slashes
+            const finalPath = correctedPath.replace(/\/+/g, '/');
+            
+            if (finalPath !== pathPart + query) {
+                console.log('🔧 Cleaned image path:', path, '->', finalPath);
+            }
+            
+            return finalPath;
+        }
+        
+        // Log base path for debugging
+        console.log('📍 BASE_PATH calculated:', BASE_PATH);
+        console.log('📍 RESTAURANT_SLUG:', RESTAURANT_SLUG);
+        
+        // Keep restaurant page always in light theme
+        document.documentElement.setAttribute('data-theme', 'light');
+        
+        // Helper function to get correct base path for images
+        function getImageBasePath() {
+            // Get current path and determine base
+            const currentPath = window.location.pathname;
+            // Remove filename (index.html) and restaurant slug to get app base
+            const pathParts = currentPath.split('/').filter(p => p);
+            // Remove last two parts (restaurant-slug and index.html)
+            if (pathParts.length >= 2) {
+                pathParts.pop(); // Remove index.html or empty
+                pathParts.pop(); // Remove restaurant slug
+            }
+            // Build base path
+            const basePath = pathParts.length > 0 ? '/' + pathParts.join('/') + '/' : '/';
+            return basePath;
+        }
+        
+        // Fix cover image paths in inline styles - use absolute path from base
+        function fixCoverImagePaths() {
+            const headerSection = document.querySelector('.restaurant-header-section');
+            if (headerSection) {
+                const style = headerSection.getAttribute('style') || '';
+                if (style.includes('--bg-image')) {
+                    // Extract the URL from the style
+                    const urlMatch = style.match(/url\(['"]?([^'"]+)['"]?\)/);
+                    if (urlMatch && urlMatch[1]) {
+                        let imagePath = urlMatch[1];
+                        
+                        // Skip if it's already an HTTP/HTTPS URL
+                        if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+                            return;
+                        }
+                        
+                        // Normalize relative paths to absolute paths before cleaning
+                        if (imagePath.startsWith('../uploads/')) {
+                            // Relative path: ../uploads/covers/... -> convert to full path
+                            const cleanPath = imagePath.replace('../uploads/', '');
+                            imagePath = BASE_PATH + RESTAURANT_SLUG + '/uploads/' + cleanPath;
+                        } else if (imagePath.startsWith('/uploads/')) {
+                            // Absolute from root, add base and slug if needed
+                            imagePath = BASE_PATH + RESTAURANT_SLUG + imagePath;
+                        } else if (imagePath.startsWith('uploads/')) {
+                            // No leading slash, add base and slug
+                            imagePath = BASE_PATH + RESTAURANT_SLUG + '/' + imagePath;
+                        } else if (!imagePath.startsWith('/') && !imagePath.startsWith('http')) {
+                            // Just filename, construct full path
+                            imagePath = BASE_PATH + RESTAURANT_SLUG + '/uploads/covers/' + imagePath;
+                        }
+                        
+                        // Clean path to remove any duplicates - this is the key function
+                        imagePath = cleanImagePath(imagePath);
+                        
+                        // Preload image before setting to prevent flickering
+                        const img = new Image();
+                        img.onload = function() {
+                            // Image loaded, now update the style
+                            const newStyle = style.replace(/url\(['"]?[^'"]+['"]?\)/, `url('${imagePath}')`);
+                            headerSection.setAttribute('style', newStyle);
+                            headerSection.setAttribute('data-has-cover', 'true');
+                            headerSection.classList.add('has-cover-image');
+                            console.log('🔧 Fixed cover image path:', imagePath);
+                            console.log('📍 Base path:', BASE_PATH);
+                            console.log('✅ Cover image preloaded and set');
+                        };
+                        img.onerror = function() {
+                            console.warn('⚠️ Cover image failed to preload:', imagePath);
+                            // Still try to set it
+                            const newStyle = style.replace(/url\(['"]?[^'"]+['"]?\)/, `url('${imagePath}')`);
+                            headerSection.setAttribute('style', newStyle);
+                            headerSection.setAttribute('data-has-cover', 'true');
+                            headerSection.classList.add('has-cover-image');
+                        };
+                        img.src = imagePath;
+                    }
+                }
+            }
+        }
+        
+        // Immediately check for cover image in HTML and add class
+        (function() {
+            function addCoverImageClass() {
+                const headerSection = document.querySelector('.restaurant-header-section');
+                if (headerSection) {
+                    // Fix paths first
+                    fixCoverImagePaths();
+                    
+                    // Check style attribute
+                    const style = headerSection.getAttribute('style') || '';
+                    // Check computed style
+                    const computedStyle = window.getComputedStyle(headerSection);
+                    const bgImage = computedStyle.getPropertyValue('--bg-image');
+                    
+                    if (style.includes('--bg-image') || (bgImage && bgImage.trim() !== 'none' && bgImage.trim() !== '')) {
+                        // Immediately set attributes and classes to prevent flickering
+                        headerSection.classList.add('has-cover-image');
+                        headerSection.setAttribute('data-has-cover', 'true');
+                        
+                        // Force opacity immediately via inline style to prevent transition
+                        const beforeElement = window.getComputedStyle(headerSection, '::before');
+                        headerSection.style.setProperty('--cover-opacity', '1', 'important');
+                        
+                        console.log('Cover image detected, has-cover-image class added');
+                        console.log('Style:', style);
+                        console.log('Computed --bg-image:', bgImage);
+                        
+                        // Force reflow to ensure CSS is applied
+                        void headerSection.offsetHeight;
+                        
+                        // Double check and force visibility - ensure it stays visible
+                        setTimeout(() => {
+                            const finalBg = window.getComputedStyle(headerSection).getPropertyValue('--bg-image');
+                            const finalOpacity = window.getComputedStyle(headerSection, '::before').opacity;
+                            if (finalBg && finalBg.trim() !== 'none' && finalBg.trim() !== '') {
+                                console.log('✅ Cover image confirmed in HTML, opacity:', finalOpacity);
+                                // Force visibility again if needed
+                                if (parseFloat(finalOpacity) < 0.5) {
+                                    headerSection.classList.add('has-cover-image');
+                                    headerSection.setAttribute('data-has-cover', 'true');
+                                    console.log('🔧 Forced cover image visibility');
+                                }
+                            }
+                        }, 100);
+                    } else {
+                        console.log('No cover image found in HTML');
+                    }
+                }
+            }
+            // Check immediately
+            addCoverImageClass();
+            // Check after DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', addCoverImageClass);
+            } else {
+                setTimeout(addCoverImageClass, 0);
+            }
+            // Also check after a delay to catch any late updates
+            setTimeout(addCoverImageClass, 500);
+        })();
+        
+        // Update logos - topbar uses main logo, footer uses light logo for dark background
+        function updateAllLogos() {
+            const footerLogo = document.getElementById('footerLogo');
+            const topbarLogo = document.getElementById('topbarLogo');
+            
+            if (footerLogo) footerLogo.src = '../assets/images/logo.png';
+            if (topbarLogo) topbarLogo.src = '../assets/images/logo.png';
+        }
+        
+        // Update logo on page load
+        updateAllLogos();
+        
+        // Logos are always light on restaurant pages, no need to listen for theme changes
+        
+        // Global language variable
+        window.currentLanguage = localStorage.getItem('restaurantLanguage') || localStorage.getItem('language') || 'az';
+        
+        // Initialize i18next
+        function initI18next() {
+            i18next.init({
+                lng: window.currentLanguage,
+                debug: false,
+                resources: translations
+            }, function(err, t) {
+                if (err) {
+                    console.error('i18next initialization failed:', err);
+                    return;
+                }
+                // Set global t function
+                window.t = function(key) {
+                    return i18next.t('restaurant.' + key);
+                };
+                updateContent();
+            });
+        }
+        
+        // Apply translations to elements
+        function applyTranslations(lang) {
+            if (typeof i18next === 'undefined' || !i18next.isInitialized) {
+                console.warn('i18next not initialized, initializing now...');
+                window.currentLanguage = lang;
+                localStorage.setItem('restaurantLanguage', lang);
+                localStorage.setItem('language', lang);
+                initI18next();
+                return;
+            }
+            
+            i18next.changeLanguage(lang, function(err, t) {
+                if (err) {
+                    console.error('Language change failed:', err);
+                    return;
+                }
+                window.currentLanguage = lang;
+                localStorage.setItem('restaurantLanguage', lang);
+                localStorage.setItem('language', lang);
+                updateContent();
+            });
+        }
+        
+        // Update all translated content
+        function updateContent() {
+            if (!i18next || !i18next.isInitialized) {
+                console.warn('i18next not initialized yet');
+                return;
+            }
+            
+            // Translate elements with data-i18n attribute
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (key) {
+                    const translation = i18next.t('restaurant.' + key);
+                    if (translation && translation !== 'restaurant.' + key) {
+                        el.textContent = translation;
+                    }
+                }
+            });
+            
+            // Translate placeholder attributes
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (key) {
+                    const translation = i18next.t('restaurant.' + key);
+                    if (translation && translation !== 'restaurant.' + key) {
+                        el.placeholder = translation;
+                    }
+                }
+            });
+            
+            // Translate title attributes
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                const key = el.getAttribute('data-i18n-title');
+                if (key) {
+                    const translation = i18next.t('restaurant.' + key);
+                    if (translation && translation !== 'restaurant.' + key) {
+                        el.setAttribute('title', translation);
+                    }
+                }
+            });
+            
+            // Translate aria-label attributes
+            document.querySelectorAll('[data-i18n-aria-label]').forEach(el => {
+                const key = el.getAttribute('data-i18n-aria-label');
+                if (key) {
+                    const translation = i18next.t('restaurant.' + key);
+                    if (translation && translation !== 'restaurant.' + key) {
+                        el.setAttribute('aria-label', translation);
+                    }
+                }
+            });
+            
+            // Translate alt attributes for images
+            document.querySelectorAll('img[data-i18n-alt]').forEach(el => {
+                const key = el.getAttribute('data-i18n-alt');
+                if (key) {
+                    const translation = i18next.t('restaurant.' + key);
+                    if (translation && translation !== 'restaurant.' + key) {
+                        el.setAttribute('alt', translation);
+                    }
+                }
+            });
+            
+            // Re-render products and categories with new language
+            if (typeof loadCategoriesAndProducts === 'function') {
+                loadCategoriesAndProducts();
+            } else if (typeof loadProducts === 'function' && typeof currentCategory !== 'undefined') {
+                const searchValue = document.getElementById('searchInput')?.value || '';
+                loadProducts(currentCategory, searchValue);
+            }
+        }
+        
+        // Translation helper function (backward compatibility)
+        window.t = function(key) {
+            if (typeof i18next !== 'undefined' && i18next.isInitialized) {
+                return i18next.t('restaurant.' + key);
+            }
+            // Fallback if i18next not initialized yet
+            return key;
+        };
+        
+        
+        let allProducts = [];
+        let allCategories = [];
+        let currentCategory = 'all';
+        let restaurantData = null;
+        
+        
+        // Load restaurant data and check if active
+        function checkRestaurantStatus() {
+            fetch(`../api/api.php?action=get_restaurant&id=${RESTAURANT_ID}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.restaurant) {
+                        restaurantData = data.restaurant;
+                        
+                        // Set background image if cover_path exists
+                        const headerSection = document.querySelector('.restaurant-header-section');
+                        if (headerSection) {
+                            // Check if cover_path exists in restaurant data
+                            if (restaurantData.cover_path && restaurantData.cover_path.trim() !== '') {
+                                // Handle cover path - now in restaurant folder: restaurant-slug/uploads/covers/filename.jpg
+                                let coverPath = restaurantData.cover_path.trim();
+                                
+                                // Set the CSS variable for background image
+                                if (coverPath) {
+                                    let imagePath = coverPath.trim();
+                                    
+                                    // Skip if it's already an HTTP/HTTPS URL
+                                    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+                                        // Use as is for external URLs
+                                    } else {
+                                        // Normalize relative paths to absolute paths before cleaning
+                                        if (imagePath.startsWith('/' + RESTAURANT_SLUG + '/')) {
+                                            // Path starts with /restaurant-slug/, add base path
+                                            imagePath = BASE_PATH.replace(/\/$/, '') + imagePath;
+                                        } else if (imagePath.includes(RESTAURANT_SLUG + '/uploads/')) {
+                                            // Already has restaurant slug, add base if not absolute
+                                            if (!imagePath.startsWith('/')) {
+                                                imagePath = BASE_PATH + imagePath;
+                                            } else if (!imagePath.startsWith(BASE_PATH.replace(/\/$/, ''))) {
+                                                imagePath = BASE_PATH.replace(/\/$/, '') + imagePath;
+                                            }
+                                        } else if (imagePath.startsWith('uploads/')) {
+                                            // Relative path from restaurant folder
+                                            imagePath = BASE_PATH + RESTAURANT_SLUG + '/' + imagePath;
+                                        } else if (imagePath.includes('/uploads/')) {
+                                            // Has uploads but might be missing base/slug
+                                            if (!imagePath.startsWith('/')) {
+                                                imagePath = BASE_PATH + imagePath;
+                                            } else if (!imagePath.includes(RESTAURANT_SLUG)) {
+                                                // Missing slug, add it after base
+                                                const baseClean = BASE_PATH.replace(/\/$/, '');
+                                                if (imagePath.startsWith(baseClean)) {
+                                                    imagePath = baseClean + '/' + RESTAURANT_SLUG + imagePath.substring(baseClean.length);
+                                                } else {
+                                                    imagePath = BASE_PATH + RESTAURANT_SLUG + imagePath;
+                                                }
+                                            }
+                                        } else if (!imagePath.includes('/')) {
+                                            // Just filename
+                                            imagePath = BASE_PATH + RESTAURANT_SLUG + '/uploads/covers/' + imagePath;
+                                        }
+                                        
+                                        // Clean path to remove any duplicate restaurant slug - this is the key function
+                                        imagePath = cleanImagePath(imagePath);
+                                        
+                                        // Ensure path starts with / for absolute path
+                                        if (!imagePath.startsWith('http') && !imagePath.startsWith('/')) {
+                                            imagePath = '/' + imagePath;
+                                        }
+                                    }
+                                    
+                                    // Add cache busting if not already present
+                                    let bgUrl = imagePath;
+                                    if (!bgUrl.includes('?v=') && !bgUrl.includes('&v=')) {
+                                        bgUrl += '?v=' + Date.now();
+                                    }
+                                    bgUrl = `url('${bgUrl}')`;
+                                    
+                                    // Set immediately to prevent flickering, then preload for cache
+                                    headerSection.style.setProperty('--bg-image', bgUrl);
+                                    headerSection.setAttribute('data-has-cover', 'true');
+                                    headerSection.classList.add('has-cover-image');
+                                    
+                                    // Force immediate visibility - no transition
+                                    const beforeStyle = window.getComputedStyle(headerSection, '::before');
+                                    console.log('✅ Cover image set immediately from API:', coverPath);
+                                    console.log('✅ Background URL:', bgUrl);
+                                    
+                                    // Preload image in background for cache (don't wait)
+                                    const img = new Image();
+                                    img.onload = function() {
+                                        // Image cached, ensure it stays visible
+                                        headerSection.classList.add('has-cover-image');
+                                        headerSection.setAttribute('data-has-cover', 'true');
+                                        console.log('✅ Cover image preloaded and cached');
+                                        
+                                        // Double check visibility
+                                        setTimeout(() => {
+                                            const finalOpacity = window.getComputedStyle(headerSection, '::before').opacity;
+                                            if (parseFloat(finalOpacity) < 0.5) {
+                                                headerSection.classList.add('has-cover-image');
+                                                headerSection.setAttribute('data-has-cover', 'true');
+                                                console.log('🔧 Forced cover image visibility after preload');
+                                            }
+                                        }, 50);
+                                    };
+                                    img.onerror = function() {
+                                        console.warn('⚠️ Cover image failed to preload:', imagePath);
+                                        // Still visible, just log warning
+                                    };
+                                    
+                                    // Extract URL from bgUrl for preloading
+                                    const imageUrl = bgUrl.match(/url\(['"]?([^'"]+)['"]?\)/)?.[1];
+                                    if (imageUrl) {
+                                        img.src = imageUrl;
+                                    }
+                                    
+                                    // Force reflow immediately
+                                    void headerSection.offsetHeight;
+                                }
+                            } else {
+                                // If API doesn't have cover_path, check if background is already set in HTML
+                                const existingBg = headerSection.getAttribute('style') || '';
+                                const computedBg = window.getComputedStyle(headerSection).getPropertyValue('--bg-image');
+                                if (existingBg.includes('--bg-image') || (computedBg && computedBg.trim() !== 'none' && computedBg.trim() !== '')) {
+                                    // Keep existing cover image from HTML
+                                    headerSection.classList.add('has-cover-image');
+                                    console.log('✅ Cover image found in HTML, keeping it');
+                                    
+                                    // Force reflow
+                                    void headerSection.offsetHeight;
+                                } else {
+                                    // No cover image at all
+                                    console.log('ℹ️ No cover image found');
+                                }
+                            }
+                        }
+                        
+                        // Check restaurant status
+                        if (restaurantData.is_active == 0 || restaurantData.is_active === 0) {
+                            // Hide all content sections (keep navbar visible)
+                            document.querySelector('.restaurant-header-section').style.display = 'none';
+                            document.querySelector('.category-filters-section').style.display = 'none';
+                            document.querySelector('.menu-items-section').style.display = 'none';
+                            document.querySelector('.cart-panel').style.display = 'none';
+                            document.querySelector('.cart-button-container').style.display = 'none';
+                            document.querySelector('footer').style.display = 'none';
+                            
+                            // Show inactive message
+                            document.getElementById('inactiveRestaurantMessage').style.display = 'flex';
+                            // Translate inactive message
+                            updateContent();
+                        } else {
+                            // Restaurant is active, track view and continue normal loading
+                            fetch(`../api/api.php?action=get_restaurant&id=${RESTAURANT_ID}&track_view=true`)
+                                .catch(error => console.log('View tracking error:', error));
+                            loadCategories();
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.log('Restaurant status check error:', error);
+                    // If error, continue normal loading
+                    loadCategories();
+                });
+        }
+        
+        // Check restaurant status on page load
+        checkRestaurantStatus();
+        
+        // Load categories
+        function loadCategories() {
+            const lang = window.currentLanguage || 'az';
+            fetch(`../api/api.php?action=get_categories&restaurant_id=${RESTAURANT_ID}&lang=${lang}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.categories) {
+                        allCategories = data.categories;
+                        const filtersContainer = document.getElementById('categoryFilters');
+                        const searchBtn = filtersContainer.querySelector('#categorySearchBtn');
+                        filtersContainer.innerHTML = '';
+                        if (searchBtn) filtersContainer.appendChild(searchBtn);
+
+                        if (searchBtn) {
+                            searchBtn.addEventListener('click', function() {
+                                const section = document.getElementById('categoryFiltersSection');
+                                const searchInline = document.getElementById('categorySearchInline');
+                                const searchInput = document.getElementById('searchInput');
+                                if (section && searchInline) {
+                                    section.classList.add('search-open');
+                                    searchInline.setAttribute('aria-hidden', 'false');
+                                    setTimeout(function() {
+                                        if (searchInput) {
+                                            searchInput.focus();
+                                        }
+                                    }, 120);
+                                }
+                            });
+                        }
+
+                        data.categories.forEach(cat => {
+                            const btn = document.createElement('button');
+                            btn.className = 'category-filter-btn';
+                            btn.setAttribute('data-category', cat.id);
+                            btn.innerHTML = `<span>${escapeHtml(cat.name)}</span>`;
+                            btn.addEventListener('click', function() {
+                                document.querySelectorAll('.category-filter-btn').forEach(b => b.classList.remove('active'));
+                                this.classList.add('active');
+                                currentCategory = this.getAttribute('data-category');
+                                loadProducts(currentCategory, document.getElementById('searchInput')?.value || '');
+                            });
+                            filtersContainer.appendChild(btn);
+                        });
+                        setupCategoryScrollSpy();
+                    }
+                })
+                .catch(error => console.error('Error loading categories:', error));
+        }
+        
+        // Escape HTML
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text ? String(text).replace(/[&<>"']/g, m => map[m]) : '';
+        }
+        
+        // Load products with translation support
+        function loadProducts(category = 'all', searchQuery = '') {
+            const menuItems = document.getElementById('menuItems');
+            currentCategory = category;
+            
+            let filteredProducts = category === 'all' 
+                ? allProducts 
+                : allProducts.filter(p => p.category_id == category);
+            
+            // Search filter
+            if (searchQuery) {
+                filteredProducts = filteredProducts.filter(p => 
+                    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
+                );
+            }
+            
+            if (filteredProducts.length === 0) {
+                menuItems.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <i class="bi bi-inbox" style="font-size: 60px; color: rgba(255, 255, 255, 0.3);"></i>
+                        <h3 class="mt-3" style="color: rgba(255, 255, 255, 0.8);">${t('noProductsFound')}</h3>
+                        <p style="color: rgba(255, 255, 255, 0.5);">${t('noProductsInCategory')}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Kateqoriyaya görə qrupla – hər qrupun üstündə kateqoriya başlığı görünsün
+            const groups = [];
+            const seen = new Set();
+            filteredProducts.forEach(p => {
+                const cid = p.category_id ?? 'uncategorized';
+                if (!seen.has(cid)) {
+                    seen.add(cid);
+                    groups.push({
+                        category_id: cid,
+                        category_name: (p.category_name && p.category_name.trim()) ? p.category_name : t('category'),
+                        products: []
+                    });
+                }
+                const g = groups.find(x => x.category_id == cid);
+                if (g) g.products.push(p);
+            });
+
+            menuItems.innerHTML = groups.map(group => {
+                const heading = `<div class="col-12 menu-category-section" data-category-id="${group.category_id}"><h2 class="menu-category-heading">${escapeHtml(group.category_name)}</h2></div>`;
+                const cards = group.products.map(product => {
+                    const hasDiscount = product.discount_price && parseFloat(product.discount_price) > 0;
+                    const displayPrice = hasDiscount ? product.discount_price : product.price;
+                    return `
+                    <div class="col-6 col-md-4 col-lg-3">
+                        <div class="menu-card" onclick="showProductModal(${product.id})">
+                            ${hasDiscount ? `<span class="menu-card-badge discount-badge"><i class="bi bi-percent"></i> ${t('discount')}</span>` : ''}
+                            ${product.popular == 1 ? `<span class="menu-card-badge popular-badge"><i class="bi bi-fire"></i> ${t('popular')}</span>` : ''}
+                            <div class="menu-card-image">
+                                ${product.image_path ? 
+                                    `<img src="../${product.image_path}" alt="${escapeHtml(product.name)}" loading="lazy">` :
+                                    `<div class="menu-card-placeholder">
+                                        <i class="bi bi-image"></i>
+                                    </div>`
+                                }
+                            </div>
+                            <div class="menu-card-content">
+                                <h5 class="menu-card-title">${escapeHtml(product.name)}</h5>
+                                ${product.description ? `<p class="menu-card-description">${escapeHtml(product.description)}</p>` : ''}
+                                <div class="menu-card-footer">
+                                    <div class="menu-card-price">
+                                        ${hasDiscount ? `<span class="original-price">${parseFloat(product.price).toFixed(2)} ${t('manat')}</span>` : ''}
+                                        <span class="price">${parseFloat(displayPrice).toFixed(2)} ${t('manat')}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                }).join('');
+                return heading + cards;
+            }).join('');
+
+            setupCategoryScrollSpy();
+        }
+
+        let categoryScrollSpyObserver = null;
+        function setupCategoryScrollSpy() {
+            const menuItems = document.getElementById('menuItems');
+            const sections = menuItems ? menuItems.querySelectorAll('.menu-category-section[data-category-id]') : [];
+            const buttons = document.querySelectorAll('.category-filter-btn');
+            if (!sections.length || !buttons.length) return;
+            if (categoryScrollSpyObserver) {
+                categoryScrollSpyObserver.disconnect();
+                categoryScrollSpyObserver = null;
+            }
+            const intersecting = new Set();
+            const headerOffset = 140;
+            const triggerLine = headerOffset + 80;
+            function getCurrentSection() {
+                const withTop = Array.from(sections).map(el => ({ el, top: el.getBoundingClientRect().top }));
+                const passed = withTop.filter(({ top }) => top <= triggerLine);
+                if (passed.length) {
+                    const best = passed.reduce((a, b) => (a.top > b.top ? a : b));
+                    return best.el;
+                }
+                if (withTop.length) return withTop.reduce((a, b) => (a.top < b.top ? a : b)).el;
+                return null;
+            }
+            function setActiveFromIntersecting() {
+                let best = null;
+                let bestTop = triggerLine;
+                intersecting.forEach(el => {
+                    const top = el.getBoundingClientRect().top;
+                    if (top <= bestTop && top > -250) { bestTop = top; best = el; }
+                });
+                if (!best && intersecting.size) {
+                    const arr = Array.from(intersecting);
+                    arr.sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+                    best = arr[0];
+                }
+                if (!best) best = getCurrentSection();
+                const cid = best ? best.getAttribute('data-category-id') : 'all';
+                const buttonsList = document.querySelectorAll('.category-filter-btn');
+                buttonsList.forEach(btn => {
+                    const isActive = (cid === 'all' && btn.getAttribute('data-category') === 'all') || btn.getAttribute('data-category') === String(cid);
+                    const wasActive = btn.classList.contains('active');
+                    if (isActive !== wasActive) {
+                        btn.classList.toggle('active', isActive);
+                        if (isActive && btn.scrollIntoView) {
+                            btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                        }
+                    }
+                });
+            }
+            categoryScrollSpyObserver = new IntersectionObserver(
+                (entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) intersecting.add(entry.target);
+                        else intersecting.delete(entry.target);
+                    });
+                    requestAnimationFrame(setActiveFromIntersecting);
+                },
+                { rootMargin: `-${headerOffset}px 0px -30% 0px`, threshold: [0, 0.05, 0.1, 0.2] }
+            );
+            sections.forEach(section => categoryScrollSpyObserver.observe(section));
+            setActiveFromIntersecting();
+        }
+
+        // Load categories and products
+        function loadCategoriesAndProducts() {
+            loadCategories();
+            
+            // Fetch products with current language
+            const lang = window.currentLanguage || 'az';
+            console.log('Loading products with language:', lang);
+            fetch(`../api/api.php?action=get&restaurant_id=${RESTAURANT_ID}&lang=${lang}`)
+            .then(response => response.json())
+            .then(data => {
+                console.log('Products loaded:', data);
+                if (data.success && data.products && Array.isArray(data.products)) {
+                    allProducts = data.products;
+                    console.log('Total products:', data.products.length);
+                    if (data.products.length > 0) {
+                        console.log('First product sample:', data.products[0]);
+                        console.log('Product name:', data.products[0].name);
+                    }
+                    // Force reload to ensure translations are applied
+                    loadProducts(currentCategory || 'all', document.getElementById('searchInput')?.value || '');
+                } else {
+                    document.getElementById('menuItems').innerHTML = `
+                        <div class="col-12 text-center py-5">
+                            <i class="bi bi-exclamation-triangle" style="font-size: 60px; color: rgba(255, 87, 108, 0.5);"></i>
+                            <h3 class="mt-3" style="color: rgba(255, 255, 255, 0.8);">${t('errorOccurred')}</h3>
+                            <p style="color: rgba(255, 255, 255, 0.5);">${t('productsLoadFailed')}</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('menuItems').innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <i class="bi bi-wifi-off" style="font-size: 60px; color: rgba(255, 255, 255, 0.3);"></i>
+                        <h3 class="mt-3" style="color: rgba(255, 255, 255, 0.8);">${t('networkError')}</h3>
+                        <p style="color: rgba(255, 255, 255, 0.5);">${t('internetCheck')}</p>
+                    </div>
+                `;
+            });
+        }
+        
+        // Initial load
+        loadCategoriesAndProducts();
+        
+        // Category filter buttons are now handled in loadCategories()
+        
+        // Search functionality (if search input exists)
+        const searchInputEl = document.getElementById('searchInput');
+        if (searchInputEl) searchInputEl.addEventListener('input', function(e) {
+            loadProducts(currentCategory, e.target.value);
+        });
+        
+        // Close search inline (restore categories)
+        function closeCategorySearch() {
+            const section = document.getElementById('categoryFiltersSection');
+            const searchInline = document.getElementById('categorySearchInline');
+            const searchInput = document.getElementById('searchInput');
+            if (section && searchInline) {
+                section.classList.remove('search-open');
+                searchInline.setAttribute('aria-hidden', 'true');
+                if (searchInput) searchInput.blur();
+            }
+        }
+        const categorySearchClose = document.getElementById('categorySearchClose');
+        if (categorySearchClose) categorySearchClose.addEventListener('click', closeCategorySearch);
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const section = document.getElementById('categoryFiltersSection');
+                if (section && section.classList.contains('search-open')) closeCategorySearch();
+            }
+        });
+        
+        // Cart functionality
+        let cart = JSON.parse(localStorage.getItem(`cart_${RESTAURANT_SLUG}`) || '[]');
+        
+        function updateCartUI() {
+            const cartCount = document.getElementById('cartCount');
+            const cartItems = document.getElementById('cartItems');
+            const cartTotal = document.getElementById('cartTotal');
+            const checkoutBtn = document.getElementById('checkoutBtn');
+            const cartButtonContainer = document.getElementById('cartButtonContainer');
+            
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
+            cartCount.textContent = totalItems;
+            cartTotal.textContent = `${totalPrice.toFixed(2)} ${t('manat')}`;
+            
+            if (totalItems > 0) {
+                cartButtonContainer.style.display = 'block';
+                checkoutBtn.disabled = false;
+                
+                cartItems.innerHTML = cart.map(item => `
+                    <div class="cart-item">
+                        <div class="cart-item-info">
+                            <h5>${escapeHtml(item.name)}</h5>
+                            <p>${item.price.toFixed(2)} ${t('manat')}</p>
+                        </div>
+                        <div class="cart-item-controls">
+                            <button onclick="updateCartQuantity(${item.id}, -1)">-</button>
+                            <span>${item.quantity}</span>
+                            <button onclick="updateCartQuantity(${item.id}, 1)">+</button>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                cartButtonContainer.style.display = 'none';
+                checkoutBtn.disabled = true;
+                cartItems.innerHTML = `
+                    <div class="cart-empty">
+                        <i class="bi bi-cart-x"></i>
+                        <p>${t('cartEmpty')}</p>
+                    </div>
+                `;
+            }
+            
+            localStorage.setItem(`cart_${RESTAURANT_SLUG}`, JSON.stringify(cart));
+        }
+        
+        // addToCart function removed - cart functionality disabled
+        function addToCart(productId) {
+            // Cart functionality has been disabled
+            return;
+        }
+        
+        function updateCartQuantity(productId, change) {
+            const cartItem = cart.find(item => item.id == productId);
+            if (!cartItem) return;
+            
+            cartItem.quantity += change;
+            
+            if (cartItem.quantity <= 0) {
+                cart = cart.filter(item => item.id != productId);
+            }
+            
+            updateCartUI();
+        }
+        
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = 'toast-notification';
+            notification.innerHTML = `
+                <i class="bi bi-${type === 'success' ? 'check-circle-fill' : 'info-circle-fill'}"></i>
+                <span>${message}</span>
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.classList.add('show'), 10);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+        
+        // Cart panel controls
+        document.getElementById('cartButton').addEventListener('click', function() {
+            document.getElementById('cartPanel').classList.add('active');
+        });
+        
+        document.getElementById('closeCart').addEventListener('click', function() {
+            document.getElementById('cartPanel').classList.remove('active');
+        });
+        
+        document.getElementById('cartPanel').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.remove('active');
+            }
+        });
+        
+        document.getElementById('checkoutBtn').addEventListener('click', function() {
+            if (cart.length === 0) return;
+            
+            const orderText = cart.map(item => 
+                `${item.name} x${item.quantity} - ${(item.price * item.quantity).toFixed(2)} ${t('manat')}`
+            ).join('\n');
+            
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
+            showNotification(t('orderAccepted'), 'success');
+            
+            setTimeout(() => {
+                alert(`${t('orderTitle')}\n\n${orderText}\n\n${t('orderTotal')} ${total.toFixed(2)} ${t('manat')}\n\n${t('orderThanks')}`);
+                cart = [];
+                updateCartUI();
+                document.getElementById('cartPanel').classList.remove('active');
+            }, 500);
+        });
+        
+        // Initialize
+        updateCartUI();
+        
+        // Product Modal
+        function showProductModal(productId) {
+            const product = allProducts.find(p => p.id == productId);
+            if (!product) return;
+            
+            const hasDiscount = product.discount_price && parseFloat(product.discount_price) > 0;
+            const displayPrice = hasDiscount ? product.discount_price : product.price;
+            const category = allCategories.find(c => c.id == product.category_id);
+            
+            let modal = document.getElementById('productModal');
+            if (!modal) {
+                // Create modal if it doesn't exist
+                const modalHTML = `
+                    <div class="product-modal-overlay" id="productModal" onclick="closeProductModal()">
+                        <div class="product-modal-content" onclick="event.stopPropagation()">
+                            <button class="product-modal-close" onclick="closeProductModal()">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                            <div class="product-modal-body" id="productModalBody">
+                                <!-- Content will be inserted here -->
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+                modal = document.getElementById('productModal');
+            }
+            
+            const modalBody = document.getElementById('productModalBody');
+            modalBody.innerHTML = `
+                <div class="product-modal-image">
+                    ${product.image_path ? 
+                        `<img src="../${product.image_path}" alt="${escapeHtml(product.name)}">` :
+                        `<div class="product-modal-placeholder">
+                            <i class="bi bi-image"></i>
+                        </div>`
+                    }
+                </div>
+                <div class="product-modal-info">
+                    <h2 class="product-modal-title">${escapeHtml(product.name)}</h2>
+                    ${product.description ? `<p class="product-modal-description">${escapeHtml(product.description)}</p>` : ''}
+                    <div class="product-modal-price-section">
+                        ${hasDiscount ? `
+                            <div class="product-modal-price-old">${parseFloat(product.price).toFixed(2)} ${t('manat')}</div>
+                            <div class="product-modal-price-new">${parseFloat(displayPrice).toFixed(2)} ${t('manat')}</div>
+                        ` : `
+                            <div class="product-modal-price">${parseFloat(displayPrice).toFixed(2)} ${t('manat')}</div>
+                        `}
+                    </div>
+                    ${category ? `<div class="product-modal-category"><i class="bi bi-tag"></i> ${escapeHtml(category.name)}</div>` : ''}
+                </div>
+            `;
+            
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeProductModal() {
+            const modal = document.getElementById('productModal');
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+        
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeProductModal();
+            }
+        });
+        
+        // ==========================================
+        // LANGUAGE SYSTEM - Internationalization
+        // ==========================================
+        
+        // Language Selector - Initialize after page load
+        function initLanguageSelector() {
+            const languageBtn = document.getElementById('languageBtn');
+            const languageMenu = document.getElementById('languageMenu');
+            const languageItems = document.querySelectorAll('.language-item');
+            const currentFlagSpan = document.getElementById('currentFlag');
+            
+            if (!currentFlagSpan || !languageBtn || !languageMenu) {
+                console.error('Language selector elements not found');
+                return;
+            }
+            
+            // Get saved language or default to 'az'
+            let currentLang = localStorage.getItem('restaurantLanguage') || 'az';
+            
+            // Set initial language
+            updateLanguageDisplay(currentLang);
+            if (typeof i18next !== 'undefined' && i18next.isInitialized) {
+                applyTranslations(currentLang);
+            } else {
+                updateContent();
+            }
+            
+            // Toggle dropdown on button click
+            languageBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                languageMenu.classList.toggle('show');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!languageBtn.contains(e.target) && !languageMenu.contains(e.target)) {
+                    languageMenu.classList.remove('show');
+                }
+            });
+            
+            // Add click event to language items
+            languageItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const selectedLang = this.getAttribute('data-lang');
+                    const selectedFlag = this.getAttribute('data-flag');
+                    
+                    localStorage.setItem('restaurantLanguage', selectedLang);
+                    localStorage.setItem('restaurantFlag', selectedFlag);
+                    
+                    currentLang = selectedLang;
+                    
+                    updateLanguageDisplay(selectedLang);
+                    applyTranslations(selectedLang);
+                    // Reload categories and products with new language
+                    if (typeof loadCategoriesAndProducts === 'function') {
+                        loadCategoriesAndProducts();
+                    }
+                    
+                    // Remove active class from all items
+                    languageItems.forEach(i => i.classList.remove('active'));
+                    // Add active class to selected item
+                    this.classList.add('active');
+                    
+                    // Close dropdown
+                    languageMenu.classList.remove('show');
+                    
+                    // Show notification
+                    if (typeof showNotification === 'function') {
+                        showNotification(t('languageChanged'), 'success');
+                    }
+                });
+            });
+            
+            function updateLanguageDisplay(lang) {
+                const langFlags = {
+                    'az': '🇦🇿',
+                    'en': '🇬🇧',
+                    'ru': '🇷🇺'
+                };
+                
+                const savedFlag = localStorage.getItem('restaurantFlag');
+                if (currentFlagSpan) {
+                    currentFlagSpan.textContent = savedFlag || langFlags[lang] || '🇦🇿';
+                }
+                
+                // Set active class
+                languageItems.forEach(item => {
+                    if (item.getAttribute('data-lang') === lang) {
+                        item.classList.add('active');
+                    } else {
+                        item.classList.remove('active');
+                    }
+                });
+            }
+            
+            // translatePage is now handled by applyTranslations and updateContent
+        }
+        
+        // FORCE COVER IMAGE TO SHOW
+        function initCoverImage() {
+            const headerSection = document.querySelector('.restaurant-header-section');
+            if (!headerSection) {
+                console.log('❌ Header section not found');
+                return;
+            }
+            
+            // Check style attribute
+            const style = headerSection.getAttribute('style') || '';
+            console.log('Style attribute:', style);
+            
+            // Check computed style
+            const computedStyle = window.getComputedStyle(headerSection);
+            const bgImage = computedStyle.getPropertyValue('--bg-image');
+            console.log('Computed --bg-image:', bgImage);
+            
+            if (style.includes('--bg-image') || (bgImage && bgImage.trim() !== 'none' && bgImage.trim() !== '')) {
+                headerSection.classList.add('has-cover-image');
+                console.log('✅ Cover image class added');
+                
+                // Also set inline style as backup
+                if (bgImage && bgImage.trim() !== 'none' && bgImage.trim() !== '') {
+                    headerSection.style.setProperty('--bg-image', bgImage);
+                }
+            } else {
+                console.log('❌ No cover image found');
+            }
+        }
+        
+        // Run multiple times to ensure it works
+        initCoverImage();
+        setTimeout(initCoverImage, 50);
+        setTimeout(initCoverImage, 200);
+        
+        // Run when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                initCoverImage();
+                setTimeout(initCoverImage, 100);
+            });
+        } else {
+            setTimeout(initCoverImage, 100);
+        }
+        
+        // Initialize i18next first, then language selector
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                initI18next();
+                initLanguageSelector();
+            });
+        } else {
+            initI18next();
+            initLanguageSelector();
+        }
+    </script>
+</body>
+</html>
+

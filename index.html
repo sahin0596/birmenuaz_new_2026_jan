@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BirMenu - Rəqəmsal QR code menyuları</title>
+    <link rel="icon" type="image/png" href="assets/images/favicon.png">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Google Fonts - Formal & Elegant + Notification -->
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;0,6..96,700;1,6..96,400&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <!-- AOS Animation Library -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <!-- i18next for translations -->
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23.7.6/i18next.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        /* ========== MINIMALIST LOADING SCREEN (B&W) ========== */
+        .birmenu-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+        .birmenu-loader.loaded {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        .loader-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 32px;
+        }
+        .loader-logo {
+            opacity: 0;
+            animation: loaderFadeIn 0.6s ease 0.2s forwards;
+        }
+        .loader-logo img {
+            height: 40px;
+            width: auto;
+        }
+        @keyframes loaderFadeIn {
+            to { opacity: 1; }
+        }
+        .loader-progress {
+            width: 120px;
+            height: 2px;
+            background: #e5e5e5;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .loader-progress-bar {
+            height: 100%;
+            width: 0;
+            background: #000;
+            border-radius: 2px;
+            animation: loaderProgress 1s ease forwards;
+        }
+        @keyframes loaderProgress {
+            0% { width: 0; }
+            100% { width: 100%; }
+        }
+        @media (max-width: 480px) {
+            .loader-logo img { height: 34px; }
+            .loader-progress { width: 100px; }
+        }
+
+        /* ========== POS COMING SOON – BİLDİRİŞ MODAL ========== */
+        #posComingSoonModal .modal-dialog {
+            max-width: 400px;
+        }
+        #posComingSoonModal .modal-content {
+            border: none;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.04);
+            background: var(--dark-bg);
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        [data-theme="dark"] #posComingSoonModal .modal-content {
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.08);
+        }
+        #posComingSoonModal .modal-header {
+            border-bottom: none;
+            padding: 0;
+            position: relative;
+            min-height: 0;
+        }
+        #posComingSoonModal .modal-title {
+            display: none;
+        }
+        #posComingSoonModal .btn-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            z-index: 2;
+            opacity: 0.45;
+            padding: 0.35rem;
+            font-size: 0.875rem;
+        }
+        #posComingSoonModal .btn-close:hover {
+            opacity: 0.8;
+        }
+        #posComingSoonModal .modal-body {
+            padding: 0;
+            text-align: left;
+        }
+        .pos-notification-card {
+            display: flex;
+            gap: 1rem;
+            padding: 1.5rem 1.5rem 1.5rem 0;
+            position: relative;
+        }
+        .pos-notification-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            border-radius: 0 4px 4px 0;
+            background: linear-gradient(180deg, var(--primary-color), var(--primary-dark));
+        }
+        .pos-notification-icon-wrap {
+            flex-shrink: 0;
+            width: 48px;
+            height: 48px;
+            margin-left: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            background: rgba(37, 99, 235, 0.12);
+            color: var(--primary-color);
+        }
+        [data-theme="dark"] .pos-notification-icon-wrap {
+            background: rgba(37, 99, 235, 0.2);
+        }
+        .pos-notification-icon-wrap i {
+            font-size: 1.5rem;
+        }
+        .pos-notification-text {
+            flex: 1;
+            min-width: 0;
+            padding-right: 2rem;
+        }
+        .pos-notification-label {
+            font-size: 0.6875rem;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--primary-color);
+            margin-bottom: 0.35rem;
+        }
+        .pos-notification-title {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 700;
+            font-size: 1.125rem;
+            line-height: 1.4;
+            letter-spacing: -0.02em;
+            color: inherit;
+            margin: 0;
+        }
+        .pos-notification-desc {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            line-height: 1.5;
+            color: var(--secondary-color);
+            margin-top: 0.4rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Minimalist Loading Screen (B&W) -->
+    <div class="birmenu-loader" id="birmenuLoader">
+        <div class="loader-content">
+            <div class="loader-logo">
+                <img src="assets/images/logo.png" alt="BirMenu">
+            </div>
+            <div class="loader-progress">
+                <div class="loader-progress-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header-section">
+        <div class="container">
+            <div class="header-inner">
+                <div class="header-left">
+                    <a class="navbar-logo" href="./" aria-label="Ana səhifə">
+                        <img id="navbarLogo" src="assets/images/logo.png" alt="Logo">
+                    </a>
+                </div>
+                
+                <!-- Desktop Navigation -->
+                <nav class="main-nav desktop-nav" aria-label="Ana Naviqasiya">
+                    <div class="nav-item dropdown services-dropdown">
+                        <a class="nav-link dropdown-toggle" href="#services" id="servicesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" data-i18n="nav.services">
+                            <!-- Translated text will be inserted here -->
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="servicesDropdown">
+                            <li><a class="dropdown-item" href="services/service-qr.html">QR Menyu</a></li>
+                            <li><a class="dropdown-item" href="services/service-nfc.html">NFC</a></li>
+                            <li><a class="dropdown-item" href="services/service-qrnfc.html">QR CODE + NFC</a></li>
+                        </ul>
+                    </div>
+                    <a href="#restaurants" data-i18n="nav.restaurants"></a>
+                    <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#posComingSoonModal">Pos System</a>
+                </nav>
+
+                <div class="header-right">
+                    <a class="btn-join desktop-only" href="https://wa.me/994515103402?text=Salam%2C%20Biz%C9%99%20BirMenu%20laz%C4%B1md%C4%B1r!" target="_blank" data-i18n="nav.joinUs"></a>
+                    <!-- Language Dropdown -->
+                    <div class="dropdown language-dropdown">
+                        <button class="dropdown-toggle" id="languageDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                            <img class="lang-flag" id="currentLangFlag" src="https://flagcdn.com/24x18/az.png" alt="AZ flag" loading="lazy">
+                            <span class="lang-text" id="currentLangText">AZ</span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end" id="languageDropdownMenu" aria-labelledby="languageDropdownBtn">
+                            <button class="dropdown-item language-option active" data-lang="az">
+                                <img class="lang-flag" src="https://flagcdn.com/24x18/az.png" alt="AZ flag" loading="lazy">
+                                <span class="lang-name">Azərbaycan</span>
+                            </button>
+                            <button class="dropdown-item language-option" data-lang="ru">
+                                <img class="lang-flag" src="https://flagcdn.com/24x18/ru.png" alt="RU flag" loading="lazy">
+                                <span class="lang-name">Русский</span>
+                            </button>
+                            <button class="dropdown-item language-option" data-lang="en">
+                                <img class="lang-flag" src="https://flagcdn.com/24x18/gb.png" alt="EN flag" loading="lazy">
+                                <span class="lang-name">English</span>
+                            </button>
+                        </div>
+                    </div>
+                    <button class="theme-toggle" id="themeToggle" aria-label="Rəng rejimini dəyişdir" title="Rəng rejimi">
+                        <i class="bi bi-sun-fill" id="themeIcon"></i>
+                    </button>
+                    <a class="btn-login-nav desktop-only" href="login.php" data-i18n="nav.login"></a>
+                    
+                    <!-- Mobile Menu Toggle -->
+                    <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Menyu" aria-expanded="false" type="button">
+                        <span class="hamburger-line"></span>
+                        <span class="hamburger-line"></span>
+                        <span class="hamburger-line"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Menu Overlay -->
+            <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
+
+            <!-- Mobile Navigation -->
+            <div class="mobile-nav" id="mobileNav">
+                <nav class="mobile-nav-content">
+                    <div class="mobile-nav-item">
+                        <button class="mobile-nav-link" id="mobileServicesToggle">
+                            <span data-i18n="nav.services"></span>
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                        <div class="mobile-submenu" id="mobileServicesMenu">
+                            <a href="services/service-qr.html" class="mobile-submenu-item">QR Menyu</a>
+                            <a href="services/service-nfc.html" class="mobile-submenu-item">NFC</a>
+                            <a href="services/service-qrnfc.html" class="mobile-submenu-item">QR CODE + NFC</a>
+                        </div>
+                    </div>
+                    <a href="#restaurants" class="mobile-nav-link" data-i18n="nav.restaurants"></a>
+                    <a href="#" class="mobile-nav-link" data-bs-toggle="modal" data-bs-target="#posComingSoonModal">Pos System</a>
+                    <div class="mobile-nav-divider"></div>
+                    <a href="https://wa.me/994515103402?text=Salam%2C%20Biz%C9%99%20BirMenu%20laz%C4%B1md%C4%B1r!" target="_blank" class="mobile-nav-link mobile-nav-cta">
+                        <i class="bi bi-plus-circle"></i>
+                        <span data-i18n="nav.joinUs"></span>
+                    </a>
+                    <a href="login.php" class="mobile-nav-link">
+                        <i class="bi bi-box-arrow-in-right"></i>
+                        <span data-i18n="nav.login"></span>
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <section class="hero-section">
+        <div class="container">
+            <div class="hero-content-wrapper">
+                <div class="hero-text-content">
+                    <span class="hero-label" data-i18n="hero.label"></span>
+                    <h1 class="hero-title" data-i18n="hero.title"></h1>
+                    <p class="hero-description" data-i18n="hero.description"></p>
+                    <a href="https://wa.me/994515103402?text=Salam%2C%20Biz%C9%99%20BirMenu%20laz%C4%B1md%C4%B1r!" target="_blank" class="btn-hero">
+                        <span data-i18n="hero.contactBtn"></span>
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="hero-image-content">
+                    <div class="hero-image-wrapper">
+                        <img src="assets/images/ph_light.png" alt="Digital Menu Solutions" class="hero-image" id="heroImage">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="services-section" id="services">
+        <div class="container">
+            <div class="services-heading">
+                <span class="services-label" data-i18n="nav.services"></span>
+                <h2 class="services-title" data-i18n="services.heading"></h2>
+                <p class="services-subtitle" data-i18n="services.subtitle"></p>
+            </div>
+            <div class="services-grid">
+                <article class="service-card" data-aos="fade-up" data-aos-duration="450" data-aos-delay="0" onclick="window.location.href='services/service-qr.html'" style="cursor: pointer;">
+                    <div class="service-icon"><i class="bi bi-qr-code"></i></div>
+                    <h3 class="service-card-title" data-i18n="services.qr.title"></h3>
+                    <p class="service-card-desc" data-i18n="services.qr.desc"></p>
+                    <span class="service-card-link"><span data-i18n="services.learnMore"></span> <i class="bi bi-arrow-right"></i></span>
+                </article>
+                <article class="service-card" data-aos="fade-up" data-aos-duration="450" data-aos-delay="50" onclick="window.location.href='services/service-nfc.html'" style="cursor: pointer;">
+                    <div class="service-icon"><i class="bi bi-broadcast"></i></div>
+                    <h3 class="service-card-title" data-i18n="services.nfc.title"></h3>
+                    <p class="service-card-desc" data-i18n="services.nfc.desc"></p>
+                    <span class="service-card-link"><span data-i18n="services.learnMore"></span> <i class="bi bi-arrow-right"></i></span>
+                </article>
+                <article class="service-card service-card-combo" data-aos="fade-up" data-aos-duration="450" data-aos-delay="100" onclick="window.location.href='services/service-qrnfc.html'" style="cursor: pointer;">
+                    <div class="service-icon"><i class="bi bi-layers-fill"></i></div>
+                    <h3 class="service-card-title" data-i18n="services.combo.title"></h3>
+                    <p class="service-card-desc" data-i18n="services.combo.desc"></p>
+                    <span class="service-card-link"><span data-i18n="services.learnMore"></span> <i class="bi bi-arrow-right"></i></span>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tanıtım videosu – Minimalist & Professional -->
+    <section class="video-section" id="video">
+        <div class="container">
+            <div class="video-heading">
+                <span class="video-label" data-i18n="video.badge"></span>
+                <h2 class="video-title" data-i18n="video.title"></h2>
+                <p class="video-subtitle" data-i18n="video.subtitle"></p>
+            </div>
+            <div class="video-block" data-aos="fade-up" data-aos-duration="450" data-aos-once="true">
+                <div class="video-aspect">
+                    <iframe
+                        src="https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0&modestbranding=1"
+                        title="BirMenu tanıtım videosu"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowfullscreen
+                    ></iframe>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="menu-section" id="restaurants">
+        <div class="container">
+            <div class="partners-heading text-center mb-5">
+                <span class="section-badge" data-i18n="restaurants.badge"></span>
+                <h2 class="section-title" data-i18n="restaurants.title"></h2>
+                <p class="section-subtitle" data-i18n="restaurants.subtitle"></p>
+            </div>
+
+            <!-- Restaurant Logos Slider -->
+            <div class="restaurant-slider-wrapper partners-slider">
+                <div class="restaurant-slider" id="menuItems">
+                    <!-- Restaurant logos will be dynamically loaded here -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Choose Us Section -->
+    <section class="why-choose-section">
+        <div class="container">
+            <div class="text-center mb-0">
+                <span class="section-badge" data-i18n="whyChoose.badge"></span>
+                <h2 class="section-title" data-i18n="whyChoose.title"></h2>
+                <p class="section-subtitle" data-i18n="whyChoose.subtitle"></p>
+            </div>
+
+            <div class="why-choose-grid">
+                <div class="why-choose-card" data-aos="fade-up" data-aos-duration="500" data-aos-delay="50" data-aos-once="true">
+                    <div class="why-icon">
+                        <i class="bi bi-pencil-square"></i>
+                    </div>
+                    <h4 data-i18n="whyChoose.easy.title"></h4>
+                    <p data-i18n="whyChoose.easy.desc"></p>
+                </div>
+                <div class="why-choose-card" data-aos="fade-up" data-aos-duration="500" data-aos-delay="150" data-aos-once="true">
+                    <div class="why-icon">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <h4 data-i18n="whyChoose.sales.title"></h4>
+                    <p data-i18n="whyChoose.sales.desc"></p>
+                </div>
+                <div class="why-choose-card" data-aos="fade-up" data-aos-duration="500" data-aos-delay="250" data-aos-once="true">
+                    <div class="why-icon">
+                        <i class="bi bi-translate"></i>
+                    </div>
+                    <h4 data-i18n="whyChoose.multilang.title"></h4>
+                    <p data-i18n="whyChoose.multilang.desc"></p>
+                </div>
+                <div class="why-choose-card" data-aos="fade-up" data-aos-duration="500" data-aos-delay="350" data-aos-once="true">
+                    <div class="why-icon">
+                        <i class="bi bi-headset"></i>
+                    </div>
+                    <h4 data-i18n="whyChoose.support.title"></h4>
+                    <p data-i18n="whyChoose.support.desc"></p>
+                </div>
+            </div>
+
+            <!-- Statistics Section -->
+            <div class="stats-section" data-aos="fade-up" data-aos-delay="400">
+                <div class="stats-grid">
+                    <div class="stat-card" data-stat="customers">
+                        <div class="stat-icon">
+                            <i class="bi bi-people-fill"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number">
+                                <span class="stat-value" data-target="1500">0</span>
+                                <span class="stat-suffix">+</span>
+                            </div>
+                            <h4 data-i18n="whyChoose.stats.customers"></h4>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" data-stat="satisfied">
+                        <div class="stat-icon">
+                            <i class="bi bi-emoji-smile-fill"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number">
+                                <span class="stat-value" data-target="98">0</span>
+                                <span class="stat-suffix">%</span>
+                            </div>
+                            <h4 data-i18n="whyChoose.stats.satisfied"></h4>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" data-stat="restaurants">
+                        <div class="stat-icon">
+                            <i class="bi bi-shop"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number">
+                                <span class="stat-value" data-target="0">0</span>
+                                <span class="stat-suffix">+</span>
+                            </div>
+                            <h4 data-i18n="whyChoose.stats.restaurants"></h4>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" data-stat="orders">
+                        <div class="stat-icon">
+                            <i class="bi bi-cart-check-fill"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number">
+                                <span class="stat-value" data-target="0">0</span>
+                                <span class="stat-suffix">+</span>
+                            </div>
+                            <h4 data-i18n="whyChoose.stats.orders"></h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-content" data-aos="zoom-in">
+                <div class="cta-text">
+                    <h2 data-i18n="cta.title"></h2>
+                    <p data-i18n="cta.subtitle"></p>
+                </div>
+                    <div class="cta-actions">
+                    <a href="https://wa.me/994515103402?text=Salam%2C%20Biz%C9%99%20BirMenu%20laz%C4%B1md%C4%B1r!" target="_blank" class="btn-cta-primary">
+                        <i class="bi bi-whatsapp"></i>
+                        <span data-i18n="cta.contact"></span>
+                    </a>
+                    <a href="login.php" class="btn-cta-secondary">
+                        <i class="bi bi-box-arrow-in-right"></i>
+                        <span data-i18n="cta.login"></span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Admin / Restoran girişi – vahid səhifə: login.php -->
+
+
+    <!-- Cart Panel -->
+    <div class="cart-panel" id="cartPanel">
+        <div class="cart-header">
+            <h3 class="cart-title">Sifarişlərim</h3>
+            <button class="cart-close-btn" id="closeCart" title="Bağla">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <div class="cart-items" id="cartItems">
+            <div class="cart-empty">
+                <i class="bi bi-cart-x"></i>
+                <p>Səbət boşdur</p>
+            </div>
+        </div>
+        <div class="cart-footer">
+            <div class="cart-total">
+                <span>Ümumi:</span>
+                <span class="cart-total-price" id="cartTotal">0.00 ₼</span>
+            </div>
+            <button class="btn-checkout" id="checkoutBtn" disabled>
+                Sifarişi təsdiqlə
+            </button>
+        </div>
+    </div>
+
+    <!-- Cart Button (Fixed Bottom) -->
+    <div class="cart-button-container" id="cartButtonContainer">
+        <button class="cart-button ripple pulse-animation" id="cartButton">
+            <i class="bi bi-cart3"></i>
+            <span class="cart-count bounce-in" id="cartCount">0</span>
+            <span class="cart-button-text">Sifarişlərimə bax</span>
+        </button>
+    </div>
+
+
+    <footer class="modern-footer">
+        <div class="container">
+            <div class="footer-main">
+                <div class="footer-column footer-about">
+                    <div class="footer-logo">
+                        <img src="assets/images/logo.png" alt="BirMenu Logo" id="footerLogo">
+                    </div>
+                    <p class="footer-description" data-i18n="footer.description"></p>
+                    <div class="footer-social">
+                        <a href="mailto:infobirmenu."gmail.com" class="social-link" title="Email">
+                            <i class="bi bi-envelope-fill"></i>
+                        </a>
+                        <a href="https://wa.me/994515103402" target="_blank" class="social-link" title="WhatsApp">
+                            <i class="bi bi-whatsapp"></i>
+                        </a>
+                        <a href="tel:+994515103402" class="social-link" title="Telefon">
+                            <i class="bi bi-telephone-fill"></i>
+                        </a>
+                        <a href="www.instagram.com/birmenu.az/" class="social-link" title="Instagram">
+                            <i class="bi bi-instagram"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="footer-column">
+                    <h4 class="footer-title" data-i18n="footer.services"></h4>
+                    <ul class="footer-links">
+                        <li><a href="services/service-qr.html"><i class="bi bi-qr-code"></i> <span data-i18n="footer.qrMenu"></span></a></li>
+                        <li><a href="services/service-nfc.html"><i class="bi bi-broadcast"></i> <span data-i18n="footer.nfcCard"></span></a></li>
+                        <li><a href="services/service-qrnfc.html"><i class="bi bi-layers-fill"></i> <span data-i18n="footer.combo"></span></a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-column">
+                    <h4 class="footer-title" data-i18n="footer.quickLinks"></h4>
+                    <ul class="footer-links">
+                        <li><a href="./"><i class="bi bi-house"></i> <span data-i18n="footer.home"></span></a></li>
+                        <li><a href="#services"><i class="bi bi-grid"></i> <span data-i18n="footer.ourServices"></span></a></li>
+                        <li><a href="#restaurants"><i class="bi bi-shop"></i> <span data-i18n="footer.ourRestaurants"></span></a></li>
+                        <li><a href="login.php"><i class="bi bi-box-arrow-in-right"></i> <span data-i18n="nav.login"></span></a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-column">
+                    <h4 class="footer-title" data-i18n="footer.contact"></h4>
+                    <ul class="footer-contact">
+                        <li>
+                            <i class="bi bi-geo-alt-fill"></i>
+                            <span data-i18n="footer.address"></span>
+                        </li>
+                        <li>
+                            <i class="bi bi-telephone-fill"></i>
+                            <a href="tel:+994515103402">+994 51 510 34 02</a>
+                        </li>
+                        <li>
+                            <i class="bi bi-envelope-fill"></i>
+                            <a href="mailto:info@1menu.az">info@1menu.az</a>
+                        </li>
+                        <li>
+                            <i class="bi bi-clock-fill"></i>
+                            <span data-i18n="footer.support24"></span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div class="footer-bottom-content">
+                    <p class="footer-copyright">
+                        © 2026 <strong>BirMenu</strong>. <span data-i18n="footer.copyright"></span>
+                    </p>
+                    <div class="footer-bottom-right">
+                        <div class="footer-bottom-links">
+                            <a href="privacy-policy" data-i18n="footer.privacy"></a>
+                            <span class="separator">•</span>
+                            <a href="terms-of-service" data-i18n="footer.terms"></a>
+                        </div>
+                        <a href="^"
+                        <p class="footer-developed">Developed by <strong>zleyid</strong></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- AOS Animation Library -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <!-- Translations -->
+    <script src="assets/js/translations.js"></script>
+    <!-- Custom JS -->
+    <script src="assets/js/script.js"></script>
+    <script>
+        // Minimalist Loading Screen - 1 saniyə
+        (function() {
+            const loader = document.getElementById('birmenuLoader');
+            if (loader) {
+                setTimeout(function() {
+                    loader.classList.add('loaded');
+                    setTimeout(function() { loader.remove(); }, 600);
+                }, 1000);
+            }
+        })();
+
+        // Initialize AOS - Minimal settings
+        AOS.init({
+            duration: 400,
+            easing: 'ease-out',
+            once: true,
+            offset: 50,
+            disable: window.innerWidth < 768
+        });
+        
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+
+    <!-- WhatsApp Chatbot Button -->
+    <div class="whatsapp-chatbot" id="whatsappChatbot">
+        <div class="chatbot-preview-bubble" id="chatbotPreviewBubble" aria-hidden="true">
+            <p class="chatbot-preview-text" id="chatbotPreviewText">Salam, sizə necə kömək edə bilərik?</p>
+        </div>
+        <div class="chatbot-button" id="chatbotButton">
+            <i class="bi bi-chat-dots-fill"></i>
+            <span class="chatbot-badge" id="chatbotBadge">+1</span>
+        </div>
+        <div class="chatbot-message" id="chatbotMessage">
+            <div class="chatbot-header">
+                <div class="chatbot-header-info">
+                    <div class="chatbot-avatar">
+                        <img src="https://api.dicebear.com/7.x/personas/svg?seed=SupportAgent&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc&clothing=blazerShirt&clothingColor=ffffff,e2e8f0&facialHairProbability=0&hair=long&hairColor=4a5568,2d3748,1a202c&head=round" alt="Support Agent" class="chatbot-avatar-img">
+                    </div>
+                    <div class="chatbot-header-text">
+                        <span class="chatbot-name" data-i18n="chatbot.supportName">BIRMENU Dəstək Xidməti</span>
+                        <span class="chatbot-status" data-i18n="chatbot.online">Onlayn</span>
+                    </div>
+                </div>
+                <button class="chatbot-close" id="chatbotClose">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+            <div class="chatbot-body" id="chatbotBody">
+                <div class="chatbot-messages" id="chatbotMessages">
+                    <!-- Messages will be dynamically added here -->
+                </div>
+            </div>
+            <div class="chatbot-input-container">
+                <label for="chatbotInput" class="sr-only">Mesaj yazın</label>
+                <input type="text" class="chatbot-input" id="chatbotInput" placeholder="Mesajınızı yazın..." data-i18n-placeholder="chatbot.inputPlaceholder" aria-label="Mesaj yazın">
+                <button class="chatbot-send" id="chatbotSend" title="Göndər" aria-label="Göndər">
+                    <i class="bi bi-send-fill"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pos System – Bildiriş Modal -->
+    <div class="modal fade" id="posComingSoonModal" tabindex="-1" aria-labelledby="posComingSoonModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="posComingSoonModalLabel">Pos System</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Bağla"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="pos-notification-card">
+                        <div class="pos-notification-icon-wrap">
+                            <i class="bi bi-megaphone-fill"></i>
+                        </div>
+                        <div class="pos-notification-text">
+                            <div class="pos-notification-label">Bildiriş</div>
+                            <h2 class="pos-notification-title">Çox yaxında BirMenu</h2>
+                            <p class="pos-notification-desc">POS sistemimiz hazırlanır. Yeniliklərdən xəbərdar olmaq üçün bizi izləməkdə qalın.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
