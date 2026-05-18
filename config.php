@@ -60,7 +60,7 @@ if ($envDbHost && $envDbUser && $envDbName) {
     define('ENVIRONMENT', 'LOCAL');
 } else {
     // Production PostgreSQL Database configuration
-    define('DB_HOST', 'dpg-d85051jbc2fs73ck80l0-a.frankfurt-postgres.render.com');
+    define('DB_HOST', 'dpg-d85051jbc2fs73ck80l0-a');
     define('DB_USER', 'birmenu');
     define('DB_PASS', 'Ilnt94gnfi7gwZ09QstWfy1uar0lv1UZ');
     define('DB_NAME', 'birmenu');
