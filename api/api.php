@@ -1515,8 +1515,8 @@ function getCategories() {
         
         // Check if translation columns exist
         try {
-            $checkColumns = $pdo->query("SHOW COLUMNS FROM categories LIKE 'name_az'");
-            $hasTranslationColumns = $checkColumns && $checkColumns->rowCount() > 0;
+            $checkColumns = $pdo->query("SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'categories' AND column_name LIKE 'name_az'");
+            $hasTranslationColumns = $checkColumns && $checkColumns->fetch(PDO::FETCH_ASSOC) !== false;
         } catch (PDOException $e) {
             $hasTranslationColumns = false;
         }
