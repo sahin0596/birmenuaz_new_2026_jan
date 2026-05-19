@@ -49,7 +49,7 @@ if ($action === 'save') {
     $settings = loadSettings($settingsFile, $defaultSettings);
     $settings['qr_color'] = preg_match('/^[a-fA-F0-9]{6}$/', str_replace('#', '', $qrColor)) ? str_replace('#', '', $qrColor) : '000000';
     $settings['qr_bgcolor'] = preg_match('/^[a-fA-F0-9]{6}$/', str_replace('#', '', $qrBgcolor)) ? str_replace('#', '', $qrBgcolor) : 'ffffff';
-    $settings['logo_option'] = in_array($logoOption, ['default', 'logo_dark', 'logo_light', 'custom']) ? $logoOption : 'default';
+    $settings['logo_option'] = in_array($logoOption, ['default', 'logo_dark', 'logo.png', 'custom']) ? $logoOption : 'default';
     $settings['corner_radius'] = in_array($cornerRadius, ['sharp', 'small', 'medium', 'large']) ? $cornerRadius : 'sharp';
     
     if ($logoOption === 'custom' && isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
@@ -67,7 +67,7 @@ if ($action === 'save') {
         }
     } elseif ($logoOption === 'logo_dark') {
         $settings['logo_path'] = 'assets/images/logo_dark.png';
-    } elseif ($logoOption === 'logo_light') {
+    } elseif ($logoOption === 'logo.png') {
         $settings['logo_path'] = 'assets/images/logo.png';
     } elseif ($logoOption === 'default') {
         $settings['logo_path'] = '';

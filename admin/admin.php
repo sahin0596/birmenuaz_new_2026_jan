@@ -1955,7 +1955,7 @@ if (isset($_GET['logout'])) {
                         <img src="../assets/images/logo.png" class="qr-logo-preview" alt="">
                         <span>Loqo (tünd)</span>
                     </div>
-                    <div class="qr-logo-opt" data-logo="logo_light" onclick="selectQrLogo('logo_light')">
+                    <div class="qr-logo-opt" data-logo="logo.png" onclick="selectQrLogo('logo.png')">
                         <img src="../assets/images/logo.png" class="qr-logo-preview" alt="">
                         <span>Loqo (açıq)</span>
                     </div>

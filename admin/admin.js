@@ -733,7 +733,7 @@ function openQrSettingsModal() {
         var lo = qrSettings.logo_option;
         if (!lo && qrSettings.logo_path) {
             if (qrSettings.logo_path.indexOf('logo_dark') >= 0) lo = 'logo_dark';
-            else if ((qrSettings.logo_path || '').indexOf('logo_light') >= 0) lo = 'logo_light';
+            else if ((qrSettings.logo_path || '').indexOf('logo.png') >= 0) lo = 'logo.png';
             else lo = 'custom';
         }
         qrSettingsForm = {
