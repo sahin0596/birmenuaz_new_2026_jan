@@ -32,7 +32,7 @@ function initLanguageSwitcher() {
         if (option.dataset.lang === currentLang) {
             option.classList.add('active');
         } else {
-            option.classList.remove('active');
+            option.classList.redve('active');
         }
     });
     
@@ -862,18 +862,9 @@ function updateLogo() {
         }
     }
     
-    // Update Phone Image
-    if (heroImage) {
-        // Get current src and extract directory path
-        const currentSrc = heroImage.getAttribute('src') || heroImage.src;
-        const basePath = currentSrc.substring(0, currentSrc.lastIndexOf('/') + 1);
-        
-        if (currentTheme === 'dark') {
-            heroImage.src = basePath + 'ph_dark.png';
-        } else {
-            heroImage.src = basePath + 'ph_light.png';
-        }
-    }
+   if (heroImage) {
+    heroImage.src = 'assets/images/qr_birmenu.png';
+}
 }
 
 // Theme Toggle Functionality
@@ -1392,6 +1383,21 @@ function initWhatsAppChatbot() {
     const chatbotBadge = document.getElementById('chatbotBadge');
     const chatbotPreviewBubble = document.getElementById('chatbotPreviewBubble');
     const chatbotPreviewText = document.getElementById('chatbotPreviewText');
+    const whatsappChatBot = document.getElementById('whatsappChatBot');
+
+    if (whatsappChatBot) {
+        ['click', 'touchstart', 'mousedown', 'mouseup', 'pointerdown'].forEach(e => {
+            whatsappChatBot.addEventListener(e, function(event) {
+                event.stopPropagation();
+
+                const parentLinks = event.target.closest('a');
+
+                if (parentLinks && !parentLinks.classList.contains('chatbot-whatsapp-button')) {
+                    e.preventDefault();
+                }
+            }, true);
+        })
+    }
     
     if (!chatbotButton || !chatbotMessage || !chatbotClose || !chatbotInput || !chatbotSend || !chatbotMessages) return;
     
@@ -1493,7 +1499,7 @@ function initWhatsAppChatbot() {
         whatsappButtonContainer.style.cssText = 'padding: 0 16px 16px; margin-top: -4px;';
         
         const whatsappBtn = document.createElement('a');
-        whatsappBtn.href = '#';
+        whatsappBtn.href = 'javascript:void(0)';
         whatsappBtn.className = 'chatbot-whatsapp-button';
         whatsappBtn.style.cssText = `
             display: flex;

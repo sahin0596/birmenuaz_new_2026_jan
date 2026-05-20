@@ -24,6 +24,7 @@ const translations = {
                 heading: "Xidmətlərimiz",
                 subtitle: "Restoranınız üçün rəqəmsal menyu həlləri. Bir kliklə başlayın.",
                 learnMore: "Ətraflı",
+                soon: "Tezliklə",
                 qr: {
                     title: "QR Menyu",
                     desc: "QR kod skanla, menyu açılsın. Sadə və sürətli."
@@ -35,6 +36,10 @@ const translations = {
                 combo: {
                     title: "QR Menyu + NFC",
                     desc: "QR və NFC birlikdə. Skan və ya yaxınlaşdırma."
+                },
+                posSystem: {
+                    title: "POS Sistemi",
+                    desc: "Restoranınızın satışlarını artırın və menecmenti asanlaşdırın."
                 }
             },
             
@@ -115,6 +120,7 @@ const translations = {
                 qrMenu: "QR Menyu",
                 nfcCard: "NFC Kart",
                 combo: "QR + NFC",
+                posSystem: "POS Sistemi",
                 adminPanel: "Admin Panel",
                 home: "Ana səhifə",
                 ourServices: "Xidmətlərimiz",
