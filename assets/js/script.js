@@ -856,7 +856,7 @@ function updateLogo() {
         const basePath = currentSrc.substring(0, currentSrc.lastIndexOf('/') + 1);
         
         if (currentTheme === 'dark') {
-            footerLogo.src = basePath + 'logo_dark.png';
+            footerLogo.src = basePath + 'logo.png';
         } else {
             footerLogo.src = basePath + 'logo.png';
         }

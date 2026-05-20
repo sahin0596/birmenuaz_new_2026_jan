@@ -491,7 +491,7 @@ $restaurantSlug = $_SESSION['restaurant_slug'];
                 icon.className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
             }
             const logo = document.getElementById('adminLogo');
-            if (logo) logo.src = '../assets/images/logo_dark.png';
+            if (logo) logo.src = '../assets/images/logo.png';
         }
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -502,7 +502,7 @@ $restaurantSlug = $_SESSION['restaurant_slug'];
             loadProducts();
             
             const logo = document.getElementById('adminLogo');
-            if (logo) logo.src = '../assets/images/logo_dark.png';
+            if (logo) logo.src = '../assets/images/logo.png';
         });
 
         // Restaurant ID from session
@@ -805,7 +805,7 @@ $restaurantSlug = $_SESSION['restaurant_slug'];
 <body class="admin-wrap restaurant-admin-wrap">
     <header class="admin-header">
         <a href="../" class="admin-header-title" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:10px;">
-            <img src="../assets/images/logo_dark.png" alt="BirMenu" class="admin-logo" id="adminLogo" style="height:36px;">
+            <img src="../assets/images/logo.png" alt="BirMenu" class="admin-logo" id="adminLogo" style="height:36px;">
             <span><?php echo htmlspecialchars($restaurantName); ?></span>
         </a>
         <div class="admin-header-actions">

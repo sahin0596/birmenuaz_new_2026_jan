@@ -66,7 +66,7 @@ if ($action === 'save') {
             }
         }
     } elseif ($logoOption === 'logo_dark') {
-        $settings['logo_path'] = 'assets/images/logo_dark.png';
+        $settings['logo_path'] = 'assets/images/logo.png';
     } elseif ($logoOption === 'logo.png') {
         $settings['logo_path'] = 'assets/images/logo.png';
     } elseif ($logoOption === 'default') {
