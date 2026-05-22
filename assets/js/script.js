@@ -32,7 +32,7 @@ function initLanguageSwitcher() {
         if (option.dataset.lang === currentLang) {
             option.classList.add('active');
         } else {
-            option.classList.redve('active');
+            option.classList.remove('active');
         }
     });
     
@@ -921,13 +921,12 @@ function initThemeToggle() {
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    initI18next();
-    initThemeToggle();
-    initLanguageSwitcher();
-    initScrollAnimations();
-    fetchRestaurants();
-    // initMenu(); // Only call on restaurant menu pages, not on main page
-    updateCartUI();
+    try { initI18next(); } catch(e) { console.error('i18next:', e); }
+    try { initThemeToggle(); } catch(e) { console.error('theme:', e); }
+    try { initLanguageSwitcher(); } catch(e) { console.error('lang:', e); }
+    try { initScrollAnimations(); } catch(e) { console.error('scroll:', e); }
+    try { fetchRestaurants(); } catch(e) { console.error('restaurants:', e); }
+    try { updateCartUI(); } catch(e) { console.error('cart:', e); }
     
     // Cart button click
     const cartButton = document.getElementById('cartButton');
