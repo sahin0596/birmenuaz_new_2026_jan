@@ -1725,7 +1725,7 @@ function addSet() {
         $stmt = $pdo->prepare("INSERT INTO product_sets (restaurant_id, name, description, price, image_path, is_active) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute([$restaurant_id, $name, $description, $price, $image_path, $is_active]);
         
-        echo json_encode(['success' => true, 'message' => 'Set əlavə edildi', 'id' => $pdo->lastInsertId()], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['success' => true, 'message' => 'Set əlavə edildi', 'id' => $pdo->lastInsertId('product_sets_id_seq')], JSON_UNESCAPED_UNICODE);
     } catch (PDOException $e) {
         echo json_encode(['success' => false, 'message' => 'Xəta: ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
     }

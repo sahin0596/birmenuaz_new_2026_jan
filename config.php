@@ -112,6 +112,22 @@ class PgSqlCompatStatement {
     public function bind_param($types) {
         $args = func_get_args();
         array_shift($args);
+        // Honor the mysqli-style type string so numeric columns don't receive
+        // empty strings. PostgreSQL rejects "" for numeric/integer columns
+        // ("invalid input syntax for type numeric: \"\"") whereas MySQL silently
+        // coerced them to 0. Convert empty values to NULL and cast the rest.
+        foreach ($args as $i => $value) {
+            $type = $types[$i] ?? 's';
+            if ($type === 'i' || $type === 'd') {
+                if ($value === '' || $value === null) {
+                    $args[$i] = null;
+                } elseif ($type === 'i') {
+                    $args[$i] = (int) $value;
+                } else {
+                    $args[$i] = (float) $value;
+                }
+            }
+        }
         $this->params = $args;
         return true;
     }
@@ -127,6 +143,7 @@ class PgSqlCompatStatement {
             if (!$success) {
                 $errorInfo = $this->stmt->errorInfo();
                 $this->error = $errorInfo[2] ?? 'Statement execution failed';
+                $this->conn->error = $this->error;
                 return false;
             }
             $this->conn->affected_rows = $this->stmt->rowCount();
@@ -136,6 +153,7 @@ class PgSqlCompatStatement {
             return true;
         } catch (PDOException $e) {
             $this->error = $e->getMessage();
+            $this->conn->error = $this->error;
             return false;
         }
     }
