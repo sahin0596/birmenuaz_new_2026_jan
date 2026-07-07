@@ -228,6 +228,32 @@ class PgSqlCompat {
         $this->pdo = null;
     }
 
+    // --- Transaction support (mysqli-compatible API over PDO) ---
+    public function begin_transaction(): bool {
+        if ($this->pdo === null || $this->pdo->inTransaction()) {
+            return false;
+        }
+        return $this->pdo->beginTransaction();
+    }
+
+    public function commit(): bool {
+        if ($this->pdo === null || !$this->pdo->inTransaction()) {
+            return false;
+        }
+        return $this->pdo->commit();
+    }
+
+    public function rollback(): bool {
+        if ($this->pdo === null || !$this->pdo->inTransaction()) {
+            return false;
+        }
+        return $this->pdo->rollBack();
+    }
+
+    public function inTransaction(): bool {
+        return $this->pdo !== null && $this->pdo->inTransaction();
+    }
+
     public function real_escape_string(string $value) {
         return substr($this->pdo->quote($value), 1, -1);
     }
@@ -260,6 +286,13 @@ class PgSqlCompat {
 
     private function translateSql(string $sql): ?string {
         $trimmed = trim($sql);
+
+        // MySQL NULL-safe equality operator (<=>) has no PostgreSQL equivalent
+        // token; rewrite it to the SQL-standard "IS NOT DISTINCT FROM".
+        if (strpos($sql, '<=>') !== false) {
+            $sql = str_replace('<=>', ' IS NOT DISTINCT FROM ', $sql);
+            $trimmed = trim($sql);
+        }
 
         if (preg_match('/^SHOW\s+TABLES\s+LIKE\s+\'([^\']+)\'/i', $trimmed, $matches)) {
             $tableName = $matches[1];

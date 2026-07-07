@@ -1827,7 +1827,7 @@ function syncProductToPool($conn, $categoryName, $name, $description, $price, $d
     $name = trim($name ?? '');
     if ($name === '') return;
     // Eyni kateqoriya + ad varsa duplikat yaratma (NULL-safe)
-    $chk = $conn->prepare("SELECT id FROM product_templates WHERE (category_template_id <=> ?) AND TRIM(name) = ? LIMIT 1");
+    $chk = $conn->prepare("SELECT id FROM product_templates WHERE category_template_id IS NOT DISTINCT FROM ? AND TRIM(name) = ? LIMIT 1");
     $chk->bind_param("is", $catId, $name);
     $chk->execute();
     if ($chk->get_result()->fetch_assoc()) return;
@@ -2150,76 +2150,153 @@ function syncAllProductsToPool() {
     }
 }
 
-// Export Restaurant as ZIP (data.json + images)
+// ============================================================
+// Restaurant Export / Import
+// ------------------------------------------------------------
+// Format v3.0
+//   {
+//     "format_version": "3.0",
+//     "exported_at": "<ISO-8601>",
+//     "storage": "zip" | "inline",
+//     "source": { "restaurant_id": <int>, "slug": "<slug>" },
+//     "restaurant": { ...all columns..., logo_export_path|logo_base64, ... },
+//     "categories": [ ... ],
+//     "products": [ ... ],
+//     "product_sets": [ ... ],
+//     "version": "2.0"   // legacy compatibility marker
+//   }
+// The importer also accepts legacy v1 (inline base64, BOM-prefixed) and
+// v2 (zip with *_export_path) files.
+// ============================================================
+
+// Recursively remove a directory tree (best-effort, never throws).
+function removeDirTree($dir) {
+    if (empty($dir) || !is_dir($dir)) {
+        return;
+    }
+    $items = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::CHILD_FIRST
+    );
+    foreach ($items as $item) {
+        if ($item->isDir()) {
+            @rmdir($item->getRealPath());
+        } else {
+            @unlink($item->getRealPath());
+        }
+    }
+    @rmdir($dir);
+}
+
+// Emit a JSON error response for export/import without corrupting binary output.
+function sendJsonError($message) {
+    api_ob_clean();
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+    }
+    echo json_encode(['success' => false, 'message' => $message], JSON_UNESCAPED_UNICODE);
+}
+
+// Read a stored file (relative web path) and return base64 payload + filename.
+function assetToBase64($relativePath) {
+    if (empty($relativePath)) {
+        return null;
+    }
+    $fs = toFsPath($relativePath);
+    if (!is_file($fs)) {
+        return null;
+    }
+    $data = @file_get_contents($fs);
+    if ($data === false) {
+        return null;
+    }
+    return ['base64' => base64_encode($data), 'filename' => basename($fs)];
+}
+
+// Restore an asset (logo/cover/product/set image) to <slug>/uploads/<subdir>/.
+// Supports both ZIP (*_export_path) and inline base64 payloads.
+// Returns the new relative web path, or null when nothing was restored.
+function restoreImportedAsset($extractDir, array $data, $exportPathKey, $base64Key, $filenameKey, $slug, $subdir, $defaultExt) {
+    // ZIP mode: copy the extracted file.
+    if ($extractDir && !empty($data[$exportPathKey])) {
+        $src = $extractDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $data[$exportPathKey]);
+        if (is_file($src)) {
+            $dir = $slug . '/uploads/' . $subdir . '/';
+            if (!is_dir(toFsPath($dir))) {
+                mkdir(toFsPath($dir), 0777, true);
+            }
+            $ext = pathinfo($src, PATHINFO_EXTENSION) ?: $defaultExt;
+            $fileName = uniqid() . '.' . $ext;
+            if (@copy($src, toFsPath($dir . $fileName))) {
+                return $dir . $fileName;
+            }
+        }
+    }
+    // Inline mode: decode base64 payload.
+    if (!empty($data[$base64Key])) {
+        $bin = base64_decode($data[$base64Key], true);
+        if ($bin !== false && $bin !== '') {
+            $dir = $slug . '/uploads/' . $subdir . '/';
+            if (!is_dir(toFsPath($dir))) {
+                mkdir(toFsPath($dir), 0777, true);
+            }
+            $ext = !empty($data[$filenameKey]) ? (pathinfo($data[$filenameKey], PATHINFO_EXTENSION) ?: $defaultExt) : $defaultExt;
+            $fileName = uniqid() . '.' . $ext;
+            if (@file_put_contents(toFsPath($dir . $fileName), $bin) !== false) {
+                return $dir . $fileName;
+            }
+        }
+    }
+    return null;
+}
+
+// Validate the decoded import payload. Returns an array of human-readable errors.
+function validateImportPayload($data) {
+    $errors = [];
+    if (!is_array($data)) {
+        return ['Fayl düzgün JSON obyekti deyil'];
+    }
+    if (!isset($data['restaurant']) || !is_array($data['restaurant'])) {
+        return ['Fayl formatı yanlışdır: "restaurant" bölməsi tapılmadı'];
+    }
+    if (empty($data['restaurant']['name'])) {
+        $errors[] = 'restaurant.name boşdur';
+    }
+    if (empty($data['restaurant']['slug'])) {
+        $errors[] = 'restaurant.slug boşdur';
+    }
+    foreach (['categories', 'products', 'product_sets'] as $key) {
+        if (isset($data[$key]) && !is_array($data[$key])) {
+            $errors[] = "\"$key\" massiv olmalıdır";
+        }
+    }
+    return $errors;
+}
+
+// Export Restaurant (ZIP when available, otherwise self-contained JSON with base64 images)
 function exportRestaurant() {
     $tempDir = null;
+    $conn = null;
     try {
-        if (!class_exists('ZipArchive')) {
-            echo json_encode(['success' => false, 'message' => 'ZIP dəstəyi yoxdur (ZipArchive)'], JSON_UNESCAPED_UNICODE);
+        $restaurant_id = intval($_GET['restaurant_id'] ?? $_POST['restaurant_id'] ?? 0);
+        if ($restaurant_id <= 0) {
+            sendJsonError('Restaurant ID lazımdır');
             return;
         }
+
         $conn = getDBConnection();
-        $restaurant_id = $_GET['restaurant_id'] ?? $_POST['restaurant_id'] ?? 0;
-        
-        if (!$restaurant_id) {
-            echo json_encode(['success' => false, 'message' => 'Restaurant ID lazımdır'], JSON_UNESCAPED_UNICODE);
-            return;
-        }
-        
+
         $stmt = $conn->prepare("SELECT * FROM restaurants WHERE id = ?");
         $stmt->bind_param("i", $restaurant_id);
         $stmt->execute();
-        $result = $stmt->get_result();
-        $restaurant = $result->fetch_assoc();
-        
+        $restaurant = $stmt->get_result()->fetch_assoc();
         if (!$restaurant) {
-            echo json_encode(['success' => false, 'message' => 'Restoran tapılmadı'], JSON_UNESCAPED_UNICODE);
+            sendJsonError('Restoran tapılmadı');
             return;
         }
-        
-        unset($restaurant['login_password']);
-        
-        $tempDir = getProjectRootPath() . DIRECTORY_SEPARATOR . 'temp_export_' . uniqid();
-        if (!is_dir($tempDir)) {
-            mkdir($tempDir, 0777, true);
-        }
-        $uploadsDir = $tempDir . DIRECTORY_SEPARATOR . 'uploads';
-        $logosDir = $uploadsDir . DIRECTORY_SEPARATOR . 'logos';
-        $coversDir = $uploadsDir . DIRECTORY_SEPARATOR . 'covers';
-        $productsDir = $uploadsDir . DIRECTORY_SEPARATOR . 'products';
-        foreach ([$logosDir, $coversDir, $productsDir] as $d) {
-            if (!is_dir($d)) mkdir($d, 0777, true);
-        }
-        
-        $logoExportPath = null;
-        if (!empty($restaurant['logo_path'])) {
-            $src = toFsPath($restaurant['logo_path']);
-            if (file_exists($src)) {
-                $ext = pathinfo($src, PATHINFO_EXTENSION) ?: 'png';
-                $logoExportPath = 'uploads/logos/logo.' . $ext;
-                copy($src, $tempDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $logoExportPath));
-            }
-        }
-        if ($logoExportPath) {
-            $restaurant['logo_export_path'] = $logoExportPath;
-        }
-        unset($restaurant['logo_base64'], $restaurant['logo_filename']);
-        
-        $coverExportPath = null;
-        if (!empty($restaurant['cover_path'])) {
-            $src = toFsPath($restaurant['cover_path']);
-            if (file_exists($src)) {
-                $ext = pathinfo($src, PATHINFO_EXTENSION) ?: 'jpg';
-                $coverExportPath = 'uploads/covers/cover.' . $ext;
-                copy($src, $tempDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $coverExportPath));
-            }
-        }
-        if ($coverExportPath) {
-            $restaurant['cover_export_path'] = $coverExportPath;
-        }
-        unset($restaurant['cover_base64'], $restaurant['cover_filename']);
-        
-        $stmt = $conn->prepare("SELECT * FROM categories WHERE restaurant_id = ?");
+
+        // Deterministic ordering so repeated exports are byte-stable.
+        $stmt = $conn->prepare("SELECT * FROM categories WHERE restaurant_id = ? ORDER BY display_order ASC, id ASC");
         $stmt->bind_param("i", $restaurant_id);
         $stmt->execute();
         $categoriesResult = $stmt->get_result();
@@ -2227,400 +2304,524 @@ function exportRestaurant() {
         while ($row = $categoriesResult->fetch_assoc()) {
             $categories[] = $row;
         }
-        
-        $stmt = $conn->prepare("SELECT * FROM products WHERE restaurant_id = ?");
+
+        $stmt = $conn->prepare("SELECT * FROM products WHERE restaurant_id = ? ORDER BY id ASC");
         $stmt->bind_param("i", $restaurant_id);
         $stmt->execute();
         $productsResult = $stmt->get_result();
         $products = [];
-        $productIndex = 0;
         while ($row = $productsResult->fetch_assoc()) {
-            unset($row['image_base64'], $row['image_filename']);
-            if (!empty($row['image_path'])) {
-                $src = toFsPath($row['image_path']);
-                if (file_exists($src)) {
-                    $ext = pathinfo($src, PATHINFO_EXTENSION) ?: 'jpg';
-                    $productIndex++;
-                    $relPath = 'uploads/products/product_' . $productIndex . '.' . $ext;
-                    copy($src, $tempDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relPath));
-                    $row['image_export_path'] = $relPath;
-                }
-            }
             $products[] = $row;
         }
-        
+
+        // product_sets may not exist on very old databases – guard the query.
+        $sets = [];
+        try {
+            $stmt = $conn->prepare("SELECT * FROM product_sets WHERE restaurant_id = ? ORDER BY id ASC");
+            $stmt->bind_param("i", $restaurant_id);
+            if ($stmt->execute()) {
+                $setsResult = $stmt->get_result();
+                if ($setsResult) {
+                    while ($row = $setsResult->fetch_assoc()) {
+                        $sets[] = $row;
+                    }
+                }
+            }
+        } catch (Throwable $ignore) {
+            $sets = [];
+        }
+
+        $useZip = class_exists('ZipArchive');
+
+        if ($useZip) {
+            $tempDir = getProjectRootPath() . DIRECTORY_SEPARATOR . 'temp_export_' . uniqid();
+            @mkdir($tempDir, 0777, true);
+            foreach (['logos', 'covers', 'products', 'sets'] as $sub) {
+                @mkdir($tempDir . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . $sub, 0777, true);
+            }
+
+            $copyToZip = function ($relPath, $destRel) use ($tempDir) {
+                if (empty($relPath)) {
+                    return null;
+                }
+                $src = toFsPath($relPath);
+                if (!is_file($src)) {
+                    return null;
+                }
+                $ext = pathinfo($src, PATHINFO_EXTENSION) ?: 'bin';
+                $dest = $destRel . '.' . $ext;
+                if (@copy($src, $tempDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $dest))) {
+                    return $dest;
+                }
+                return null;
+            };
+
+            if ($p = $copyToZip($restaurant['logo_path'] ?? '', 'uploads/logos/logo')) {
+                $restaurant['logo_export_path'] = $p;
+            }
+            if ($p = $copyToZip($restaurant['cover_path'] ?? '', 'uploads/covers/cover')) {
+                $restaurant['cover_export_path'] = $p;
+            }
+            foreach ($products as $i => $product) {
+                if ($p = $copyToZip($product['image_path'] ?? '', 'uploads/products/product_' . ($i + 1))) {
+                    $products[$i]['image_export_path'] = $p;
+                }
+            }
+            foreach ($sets as $i => $set) {
+                if ($p = $copyToZip($set['image_path'] ?? '', 'uploads/sets/set_' . ($i + 1))) {
+                    $sets[$i]['image_export_path'] = $p;
+                }
+            }
+        } else {
+            // No ZIP support – embed every image as base64 so the file is self-contained.
+            if ($b = assetToBase64($restaurant['logo_path'] ?? '')) {
+                $restaurant['logo_base64'] = $b['base64'];
+                $restaurant['logo_filename'] = $b['filename'];
+            }
+            if ($b = assetToBase64($restaurant['cover_path'] ?? '')) {
+                $restaurant['cover_base64'] = $b['base64'];
+                $restaurant['cover_filename'] = $b['filename'];
+            }
+            foreach ($products as $i => $product) {
+                if ($b = assetToBase64($product['image_path'] ?? '')) {
+                    $products[$i]['image_base64'] = $b['base64'];
+                    $products[$i]['image_filename'] = $b['filename'];
+                }
+            }
+            foreach ($sets as $i => $set) {
+                if ($b = assetToBase64($set['image_path'] ?? '')) {
+                    $sets[$i]['image_base64'] = $b['base64'];
+                    $sets[$i]['image_filename'] = $b['filename'];
+                }
+            }
+        }
+
+        $slug = $restaurant['slug'] ?? ('restaurant_' . $restaurant_id);
         $exportData = [
-            'restaurant' => $restaurant,
-            'categories' => $categories,
-            'products' => $products,
-            'export_date' => date('Y-m-d H:i:s'),
-            'version' => '2.0'
+            'format_version' => '3.0',
+            'exported_at'    => date('c'),
+            'storage'        => $useZip ? 'zip' : 'inline',
+            'source'         => ['restaurant_id' => (int)$restaurant_id, 'slug' => $slug],
+            'restaurant'     => $restaurant,
+            'categories'     => $categories,
+            'products'       => $products,
+            'product_sets'   => $sets,
+            'version'        => '2.0',
         ];
-        $jsonPath = $tempDir . DIRECTORY_SEPARATOR . 'data.json';
-        file_put_contents($jsonPath, json_encode($exportData, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
-        
+
         $conn->close();
-        
-        $zipPath = getProjectRootPath() . DIRECTORY_SEPARATOR . 'temp_export_' . $restaurant['slug'] . '_' . uniqid() . '.zip';
-        $zip = new ZipArchive();
-        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            throw new Exception('ZIP yaradıla bilmədi');
+        $conn = null;
+
+        $jsonFlags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT;
+        $json = json_encode($exportData, $jsonFlags);
+        if ($json === false) {
+            sendJsonError('JSON yaradıla bilmədi: ' . json_last_error_msg());
+            return;
         }
-        $zip->addFile($jsonPath, 'data.json');
-        $baseTemp = rtrim($tempDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
-        $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($uploadsDir, RecursiveDirectoryIterator::SKIP_DOTS), RecursiveIteratorIterator::LEAVES_ONLY);
-        foreach ($files as $file) {
-            if ($file->isFile()) {
-                $filePath = $file->getRealPath();
-                $relativePath = substr($filePath, strlen($baseTemp));
-                $relativePath = str_replace('\\', '/', $relativePath);
-                $zip->addFile($filePath, $relativePath);
+
+        $safeSlug = preg_replace('/[^a-z0-9_-]/i', '_', $slug);
+        $baseName = 'restaurant_' . $safeSlug . '_' . date('Y-m-d');
+
+        if ($useZip) {
+            $jsonPath = $tempDir . DIRECTORY_SEPARATOR . 'data.json';
+            file_put_contents($jsonPath, $json);
+
+            $zipPath = getProjectRootPath() . DIRECTORY_SEPARATOR . 'temp_export_' . $safeSlug . '_' . uniqid() . '.zip';
+            $zip = new ZipArchive();
+            if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+                throw new Exception('ZIP yaradıla bilmədi');
             }
-        }
-        $zip->close();
-        
-        if (!headers_sent()) {
-            header('Content-Type: application/zip');
-            header('Content-Disposition: attachment; filename="restaurant_' . preg_replace('/[^a-z0-9_-]/i', '_', $restaurant['slug']) . '_' . date('Y-m-d') . '.zip"');
-            header('Content-Length: ' . filesize($zipPath));
+            $zip->addFile($jsonPath, 'data.json');
+            $uploadsDir = $tempDir . DIRECTORY_SEPARATOR . 'uploads';
+            if (is_dir($uploadsDir)) {
+                $baseTemp = rtrim($tempDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+                $files = new RecursiveIteratorIterator(
+                    new RecursiveDirectoryIterator($uploadsDir, RecursiveDirectoryIterator::SKIP_DOTS),
+                    RecursiveIteratorIterator::LEAVES_ONLY
+                );
+                foreach ($files as $file) {
+                    if ($file->isFile()) {
+                        $relativePath = str_replace('\\', '/', substr($file->getRealPath(), strlen($baseTemp)));
+                        $zip->addFile($file->getRealPath(), $relativePath);
+                    }
+                }
+            }
+            $zip->close();
+
+            // Stream the binary cleanly: drop any buffered output first.
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+            if (!headers_sent()) {
+                header('Content-Type: application/zip');
+                header('Content-Disposition: attachment; filename="' . $baseName . '.zip"');
+                header('Content-Length: ' . filesize($zipPath));
+                header('Cache-Control: no-store');
+            }
             readfile($zipPath);
+            @unlink($zipPath);
+            removeDirTree($tempDir);
+            exit;
         }
-        @unlink($zipPath);
-        if ($tempDir && is_dir($tempDir)) {
-            $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($tempDir, RecursiveDirectoryIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
-            foreach ($files as $f) {
-                if ($f->isDir()) rmdir($f->getRealPath()); else unlink($f->getRealPath());
-            }
-            rmdir($tempDir);
+
+        // Inline JSON download.
+        while (ob_get_level() > 0) {
+            ob_end_clean();
         }
+        if (!headers_sent()) {
+            header('Content-Type: application/json; charset=utf-8');
+            header('Content-Disposition: attachment; filename="' . $baseName . '.json"');
+            header('Content-Length: ' . strlen($json));
+            header('Cache-Control: no-store');
+        }
+        echo $json;
         exit;
-    } catch (Exception $e) {
-        if ($tempDir && is_dir($tempDir)) {
-            $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($tempDir, RecursiveDirectoryIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
-            foreach ($files as $f) {
-                if ($f->isDir()) @rmdir($f->getRealPath()); else @unlink($f->getRealPath());
-            }
-            @rmdir($tempDir);
+    } catch (Throwable $e) {
+        removeDirTree($tempDir);
+        if ($conn) {
+            @$conn->close();
         }
-        echo json_encode(['success' => false, 'message' => 'Xəta: ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        sendJsonError('İxrac xətası: ' . $e->getMessage());
     }
 }
 
-// Import Restaurant (ZIP or JSON with images)
+// Import Restaurant (ZIP or self-contained JSON, transactional)
 function importRestaurant() {
     $extractDir = null;
+    $conn = null;
     try {
-        set_time_limit(600);
+        @set_time_limit(600);
         @ini_set('max_execution_time', '600');
         @ini_set('memory_limit', '512M');
         api_ob_clean();
-        
-        $conn = getDBConnection();
-        
-        if (!isset($_FILES['import_file']) || $_FILES['import_file']['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($_FILES['import_file']['tmp_name'] ?? '')) {
-            $err = $_FILES['import_file']['error'] ?? -1;
-            $msg = 'Fayl yüklənmədi.';
-            if ($err === UPLOAD_ERR_INI_SIZE || $err === UPLOAD_ERR_FORM_SIZE) $msg = 'Fayl çox böyükdür (upload_max_filesize/post_max_size limiti).';
-            elseif ($err !== UPLOAD_ERR_OK && $err !== -1) $msg = 'Yükləmə xətası (kod: ' . $err . ').';
-            echo json_encode(['success' => false, 'message' => $msg], JSON_UNESCAPED_UNICODE);
+
+        // --- Validate the upload ---
+        if (!isset($_FILES['import_file']) || !is_uploaded_file($_FILES['import_file']['tmp_name'] ?? '')) {
+            sendJsonError('Fayl yüklənmədi.');
             return;
         }
-        
+        $uploadErr = $_FILES['import_file']['error'] ?? UPLOAD_ERR_NO_FILE;
+        if ($uploadErr !== UPLOAD_ERR_OK) {
+            if ($uploadErr === UPLOAD_ERR_INI_SIZE || $uploadErr === UPLOAD_ERR_FORM_SIZE) {
+                sendJsonError('Fayl çox böyükdür (upload_max_filesize/post_max_size limiti).');
+            } else {
+                sendJsonError('Yükləmə xətası (kod: ' . $uploadErr . ').');
+            }
+            return;
+        }
+
         $tmpPath = $_FILES['import_file']['tmp_name'];
-        $fileName = $_FILES['import_file']['name'] ?? '';
-        $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-        $zipHeader = @file_get_contents($tmpPath, false, null, 0, 2);
-        $isZip = ($ext === 'zip') || ($zipHeader !== false && bin2hex($zipHeader) === '504b');
-        
-        if ($isZip && class_exists('ZipArchive')) {
+
+        // --- Detect ZIP by magic bytes ("PK") rather than trusting the extension ---
+        $magic = @file_get_contents($tmpPath, false, null, 0, 2);
+        $isZip = ($magic !== false && $magic === 'PK');
+
+        if ($isZip) {
+            if (!class_exists('ZipArchive')) {
+                sendJsonError('ZIP faylını açmaq üçün server ZipArchive-i dəstəkləmir. Lütfən JSON formatlı ixrac faylı istifadə edin.');
+                return;
+            }
             $extractDir = getProjectRootPath() . DIRECTORY_SEPARATOR . 'temp_import_' . uniqid();
-            if (!is_dir($extractDir)) mkdir($extractDir, 0777, true);
+            @mkdir($extractDir, 0777, true);
             $zip = new ZipArchive();
             if ($zip->open($tmpPath) !== true) {
-                echo json_encode(['success' => false, 'message' => 'ZIP açıla bilmədi'], JSON_UNESCAPED_UNICODE);
+                sendJsonError('ZIP açıla bilmədi');
                 return;
             }
             $zip->extractTo($extractDir);
             $zip->close();
             $jsonPath = $extractDir . DIRECTORY_SEPARATOR . 'data.json';
-            if (!file_exists($jsonPath)) {
-                if ($extractDir && is_dir($extractDir)) {
-                    $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($extractDir, RecursiveDirectoryIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
-                    foreach ($files as $f) { if ($f->isDir()) @rmdir($f->getRealPath()); else @unlink($f->getRealPath()); }
-                    @rmdir($extractDir);
-                }
-                echo json_encode(['success' => false, 'message' => 'ZIP içində data.json tapılmadı'], JSON_UNESCAPED_UNICODE);
+            if (!is_file($jsonPath)) {
+                removeDirTree($extractDir);
+                sendJsonError('ZIP içində data.json tapılmadı');
                 return;
             }
             $fileContent = file_get_contents($jsonPath);
         } else {
             $fileContent = file_get_contents($tmpPath);
         }
-        
+
+        if ($fileContent === false || $fileContent === '') {
+            removeDirTree($extractDir);
+            sendJsonError('Fayl oxuna bilmədi və ya boşdur');
+            return;
+        }
+
+        // Strip a UTF-8 BOM (legacy exports were written with one, which breaks json_decode).
+        $fileContent = preg_replace('/^\xEF\xBB\xBF/', '', $fileContent);
+
         $importData = json_decode($fileContent, true);
-        
-        if (!$importData || !isset($importData['restaurant'])) {
-            echo json_encode(['success' => false, 'message' => 'Yanlış fayl formatı'], JSON_UNESCAPED_UNICODE);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            removeDirTree($extractDir);
+            sendJsonError('JSON oxuna bilmədi: ' . json_last_error_msg());
             return;
         }
-        
+
+        $validationErrors = validateImportPayload($importData);
+        if (!empty($validationErrors)) {
+            removeDirTree($extractDir);
+            sendJsonError('Fayl doğrulanmadı: ' . implode('; ', $validationErrors));
+            return;
+        }
+
         $restaurantData = $importData['restaurant'];
-        $categories = $importData['categories'] ?? [];
-        $products = $importData['products'] ?? [];
-        
-        $slug = $restaurantData['slug'] ?? '';
-        if (empty($slug)) {
-            echo json_encode(['success' => false, 'message' => 'Slug tələb olunur'], JSON_UNESCAPED_UNICODE);
-            return;
-        }
-        
+        $categories     = $importData['categories'] ?? [];
+        $products       = $importData['products'] ?? [];
+        $sets           = $importData['product_sets'] ?? [];
+
+        $conn = getDBConnection();
+
+        // --- Resolve a unique slug (avoid clashing with an existing restaurant) ---
+        $slug = trim($restaurantData['slug']);
         $stmt = $conn->prepare("SELECT id FROM restaurants WHERE slug = ?");
         $stmt->bind_param("s", $slug);
         $stmt->execute();
         if ($stmt->get_result()->num_rows > 0) {
             $slug = $slug . '_' . time();
         }
-        
-        $name = $restaurantData['name'] ?? '';
-        $description = $restaurantData['description'] ?? '';
-        $address = $restaurantData['address'] ?? '';
-        $phone = $restaurantData['phone'] ?? '';
-        $phone2 = $restaurantData['phone2'] ?? '';
-        $phone3 = $restaurantData['phone3'] ?? '';
-        $phone4 = $restaurantData['phone4'] ?? '';
-        $wifi_name = $restaurantData['wifi_name'] ?? '';
-        $wifi_password = $restaurantData['wifi_password'] ?? '';
+
+        // --- Scalar restaurant fields (preserve backup fidelity) ---
+        $name           = $restaurantData['name'] ?? '';
+        $description    = $restaurantData['description'] ?? '';
+        $address        = $restaurantData['address'] ?? '';
+        $phone          = $restaurantData['phone'] ?? '';
+        $phone2         = $restaurantData['phone2'] ?? '';
+        $phone3         = $restaurantData['phone3'] ?? '';
+        $phone4         = $restaurantData['phone4'] ?? '';
+        $wifi_name      = $restaurantData['wifi_name'] ?? '';
+        $wifi_password  = $restaurantData['wifi_password'] ?? '';
         $login_username = $restaurantData['login_username'] ?? '';
-        $instagram_url = $restaurantData['instagram_url'] ?? '';
-        $facebook_url = $restaurantData['facebook_url'] ?? '';
-        $whatsapp_url = $restaurantData['whatsapp_url'] ?? '';
-        $tiktok_url = $restaurantData['tiktok_url'] ?? '';
-        $login_password = !empty($restaurantData['login_password']) ? password_hash($restaurantData['login_password'], PASSWORD_DEFAULT) : password_hash('restaurant123', PASSWORD_DEFAULT);
-        $is_active = isset($restaurantData['is_active']) ? intval($restaurantData['is_active']) : 1;
-        
-        $logoPath = null;
-        $coverPath = null;
-        
-        // Logo: from ZIP extract path or base64
-        if ($extractDir && !empty($restaurantData['logo_export_path'])) {
-            $src = $extractDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $restaurantData['logo_export_path']);
-            if (file_exists($src)) {
-                $logoDir = $slug . '/uploads/logos/';
-                if (!file_exists(toFsPath($logoDir))) mkdir(toFsPath($logoDir), 0777, true);
-                $logoFileName = uniqid() . '.' . (pathinfo($src, PATHINFO_EXTENSION) ?: 'png');
-                $logoPath = $logoDir . $logoFileName;
-                copy($src, toFsPath($logoPath));
-            }
-        } elseif (!empty($restaurantData['logo_base64']) && !empty($restaurantData['logo_filename'])) {
-            $logoDir = $slug . '/uploads/logos/';
-            if (!file_exists(toFsPath($logoDir))) mkdir(toFsPath($logoDir), 0777, true);
-            $logoExtension = pathinfo($restaurantData['logo_filename'], PATHINFO_EXTENSION);
-            $logoFileName = uniqid() . '.' . $logoExtension;
-            $logoPath = $logoDir . $logoFileName;
-            file_put_contents(toFsPath($logoPath), base64_decode($restaurantData['logo_base64']));
+        $instagram_url  = $restaurantData['instagram_url'] ?? '';
+        $facebook_url   = $restaurantData['facebook_url'] ?? '';
+        $whatsapp_url   = $restaurantData['whatsapp_url'] ?? '';
+        $tiktok_url     = $restaurantData['tiktok_url'] ?? '';
+        $is_active      = isset($restaurantData['is_active']) ? intval($restaurantData['is_active']) : 1;
+        $view_count     = isset($restaurantData['view_count']) ? intval($restaurantData['view_count']) : 0;
+        $created_at     = !empty($restaurantData['created_at']) ? $restaurantData['created_at'] : date('Y-m-d H:i:s');
+
+        // Preserve an already-hashed password verbatim so logins keep working after a
+        // restore; hash plaintext (legacy); otherwise fall back to a default.
+        $rawPassword = $restaurantData['login_password'] ?? '';
+        if ($rawPassword !== '' && preg_match('/^\$2[aby]\$/', $rawPassword)) {
+            $login_password = $rawPassword;
+        } elseif ($rawPassword !== '') {
+            $login_password = password_hash($rawPassword, PASSWORD_DEFAULT);
+        } else {
+            $login_password = password_hash('restaurant123', PASSWORD_DEFAULT);
         }
-        
-        // Cover: from ZIP or base64
-        if ($extractDir && !empty($restaurantData['cover_export_path'])) {
-            $src = $extractDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $restaurantData['cover_export_path']);
-            if (file_exists($src)) {
-                $coverDir = $slug . '/uploads/covers/';
-                if (!file_exists(toFsPath($coverDir))) mkdir(toFsPath($coverDir), 0777, true);
-                $coverFileName = uniqid() . '.' . (pathinfo($src, PATHINFO_EXTENSION) ?: 'jpg');
-                $coverPath = $coverDir . $coverFileName;
-                copy($src, toFsPath($coverPath));
-            }
-        } elseif (!empty($restaurantData['cover_base64']) && !empty($restaurantData['cover_filename'])) {
-            $coverDir = $slug . '/uploads/covers/';
-            if (!file_exists(toFsPath($coverDir))) mkdir(toFsPath($coverDir), 0777, true);
-            $coverExtension = pathinfo($restaurantData['cover_filename'], PATHINFO_EXTENSION);
-            $coverFileName = uniqid() . '.' . $coverExtension;
-            $coverPath = $coverDir . $coverFileName;
-            file_put_contents(toFsPath($coverPath), base64_decode($restaurantData['cover_base64']));
+
+        // --- Restore logo & cover images (before the transaction: filesystem ops) ---
+        $logoPath  = restoreImportedAsset($extractDir, $restaurantData, 'logo_export_path', 'logo_base64', 'logo_filename', $slug, 'logos', 'png');
+        $coverPath = restoreImportedAsset($extractDir, $restaurantData, 'cover_export_path', 'cover_base64', 'cover_filename', $slug, 'covers', 'jpg');
+
+        // --- Detect optional columns for backward compatibility ---
+        $hasCategoryTranslationColumns = false;
+        $res = $conn->query("SHOW COLUMNS FROM categories LIKE 'name_az'");
+        if ($res && $res->num_rows > 0) {
+            $hasCategoryTranslationColumns = true;
         }
-        
-        $stmt = $conn->prepare("INSERT INTO restaurants (name, slug, description, address, phone, phone2, phone3, phone4, logo_path, cover_path, wifi_name, wifi_password, login_username, login_password, instagram_url, facebook_url, whatsapp_url, tiktok_url, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssssssssssssssssi", $name, $slug, $description, $address, $phone, $phone2, $phone3, $phone4, $logoPath, $coverPath, $wifi_name, $wifi_password, $login_username, $login_password, $instagram_url, $facebook_url, $whatsapp_url, $tiktok_url, $is_active);
-        
+        $hasProductTranslationColumns = false;
+        $res = $conn->query("SHOW COLUMNS FROM products LIKE 'name_az'");
+        if ($res && $res->num_rows > 0) {
+            $hasProductTranslationColumns = true;
+        }
+        $hasProductIsActive = false;
+        $res = $conn->query("SHOW COLUMNS FROM products LIKE 'is_active'");
+        if ($res && $res->num_rows > 0) {
+            $hasProductIsActive = true;
+        }
+        $hasSetsTable = false;
+        $res = $conn->query("SHOW TABLES LIKE 'product_sets'");
+        if ($res && $res->num_rows > 0) {
+            $hasSetsTable = true;
+        }
+
+        // ===================== TRANSACTION START =====================
+        if (!$conn->begin_transaction()) {
+            throw new Exception('Tranzaksiya başladıla bilmədi');
+        }
+
+        // --- Insert the restaurant ---
+        $stmt = $conn->prepare("INSERT INTO restaurants (name, slug, description, address, phone, phone2, phone3, phone4, logo_path, cover_path, wifi_name, wifi_password, login_username, login_password, instagram_url, facebook_url, whatsapp_url, tiktok_url, is_active, view_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param(
+            "ssssssssssssssssssiis",
+            $name, $slug, $description, $address, $phone, $phone2, $phone3, $phone4,
+            $logoPath, $coverPath, $wifi_name, $wifi_password, $login_username, $login_password,
+            $instagram_url, $facebook_url, $whatsapp_url, $tiktok_url, $is_active, $view_count, $created_at
+        );
         if (!$stmt->execute()) {
             throw new Exception('Restoran əlavə edilə bilmədi: ' . $conn->error);
         }
-        
         $newRestaurantId = $conn->insert_id;
-        
-        // Check if translation columns exist for categories
-        $checkCatColumns = $conn->query("SHOW COLUMNS FROM categories LIKE 'name_az'");
-        $hasCategoryTranslationColumns = $checkCatColumns && $checkCatColumns->num_rows > 0;
-        
-        // Create category mapping (old_id => new_id) və adlar (new_id => name)
+        if (!$newRestaurantId) {
+            throw new Exception('Yeni restoran ID alına bilmədi');
+        }
+
+        // --- Insert categories, remembering old_id => new_id ---
+        // Central "pool"/template tables are a secondary denormalized cache. They are
+        // populated AFTER commit (best-effort) so a pool hiccup can never abort a valid
+        // restaurant import — critical on PostgreSQL, where any in-transaction error
+        // aborts the whole transaction.
         $categoryMap = [];
         $categoryNamesByNewId = [];
-        
-        // Insert categories
+        $categoryCount = 0;
+        $categoryTemplateQueue = [];
+        $poolQueue = [];
         foreach ($categories as $category) {
-            $categoryName = $category['name'] ?? '';
-            $icon = $category['icon'] ?? '';
-            $display_order = $category['display_order'] ?? 0;
-            $oldCategoryId = $category['id'];
-            
-            // Auto-translate category name
-            // OPTIMIZATION: Use existing translations if available
-            $name_az = $categoryName; // Original name is assumed to be in Azerbaijani
-            $name_en = $category['name_en'] ?? ''; // Use existing translation if available
-            $name_ru = $category['name_ru'] ?? ''; // Use existing translation if available
-            
-            // Skip auto-translation during import for speed
-            if ($hasCategoryTranslationColumns && empty($name_en) && empty($name_ru)) {
-                // User can translate later via admin panel
-                $name_en = '';
-                $name_ru = '';
+            if (!is_array($category)) {
+                continue;
             }
-            
-            // Insert with or without translation columns
+            $categoryName  = $category['name'] ?? '';
+            $icon          = $category['icon'] ?? '';
+            $display_order = isset($category['display_order']) ? intval($category['display_order']) : 0;
+            $oldCategoryId = $category['id'] ?? null;
+
             if ($hasCategoryTranslationColumns) {
+                $name_az = $category['name_az'] ?? $categoryName;
+                $name_en = $category['name_en'] ?? '';
+                $name_ru = $category['name_ru'] ?? '';
                 $stmt = $conn->prepare("INSERT INTO categories (restaurant_id, name, name_az, name_en, name_ru, icon, display_order) VALUES (?, ?, ?, ?, ?, ?, ?)");
                 $stmt->bind_param("isssssi", $newRestaurantId, $categoryName, $name_az, $name_en, $name_ru, $icon, $display_order);
             } else {
                 $stmt = $conn->prepare("INSERT INTO categories (restaurant_id, name, icon, display_order) VALUES (?, ?, ?, ?)");
                 $stmt->bind_param("issi", $newRestaurantId, $categoryName, $icon, $display_order);
             }
-            
-            if ($stmt->execute()) {
-                $newCategoryId = $conn->insert_id;
+            if (!$stmt->execute()) {
+                throw new Exception('Kateqoriya əlavə edilə bilmədi: ' . $conn->error);
+            }
+            $newCategoryId = $conn->insert_id;
+            if ($oldCategoryId !== null) {
                 $categoryMap[$oldCategoryId] = $newCategoryId;
-                $categoryNamesByNewId[$newCategoryId] = $categoryName;
-                ensureCategoryTemplate($conn, $categoryName, $icon, $display_order);
             }
+            $categoryNamesByNewId[$newCategoryId] = $categoryName;
+            $categoryTemplateQueue[] = [$categoryName, $icon, $display_order];
+            $categoryCount++;
         }
-        
-        // Check if translation columns exist for products
-        $checkProductColumns = $conn->query("SHOW COLUMNS FROM products LIKE 'name_az'");
-        $hasProductTranslationColumns = $checkProductColumns && $checkProductColumns->num_rows > 0;
-        
-        // Check if is_active column exists in products table
-        $checkIsActiveColumn = $conn->query("SHOW COLUMNS FROM products LIKE 'is_active'");
-        $hasIsActiveColumn = $checkIsActiveColumn && $checkIsActiveColumn->num_rows > 0;
-        
-        // Insert products (BATCH PROCESSING for better performance)
-        $productCount = count($products);
-        $batchSize = 50; // Process 50 products at a time
-        $processedCount = 0;
-        
+
+        // --- Insert products, remapping category ids ---
+        $productCount = 0;
         foreach ($products as $index => $product) {
-            // Reset execution time every 50 products to avoid timeout
-            if ($processedCount % $batchSize === 0) {
-                set_time_limit(120); // Reset timer
+            if (!is_array($product)) {
+                continue;
             }
-            
-            $productName = $product['name'] ?? '';
+            if ($productCount % 50 === 0) {
+                @set_time_limit(120);
+            }
+
+            $productName        = $product['name'] ?? '';
             $productDescription = $product['description'] ?? '';
-            $price = $product['price'] ?? 0;
-            $discount_price = $product['discount_price'] ?? null;
-            $oldCategoryId = $product['category_id'] ?? null;
-            $newCategoryId = isset($categoryMap[$oldCategoryId]) ? $categoryMap[$oldCategoryId] : null;
-            $popular = isset($product['popular']) ? intval($product['popular']) : 0;
-            
-            // Auto-translate product name and description
-            // OPTIMIZATION: Skip translation during import to save time
-            // Translation can be done later via batch update
-            $name_az = $productName; // Original name is assumed to be in Azerbaijani
-            $name_en = $product['name_en'] ?? ''; // Use existing translation if available
-            $name_ru = $product['name_ru'] ?? ''; // Use existing translation if available
-            $description_az = $productDescription;
-            $description_en = $product['description_en'] ?? ''; // Use existing translation if available
-            $description_ru = $product['description_ru'] ?? ''; // Use existing translation if available
-            
-            // Only translate if translations are missing (to avoid API timeout)
-            if ($hasProductTranslationColumns && empty($name_en) && empty($name_ru)) {
-                // Skip auto-translation during import for speed
-                // User can translate later via admin panel
-                $name_en = ''; 
-                $name_ru = '';
-                $description_en = '';
-                $description_ru = '';
-            }
-            
-            // Product image: from ZIP extract path or base64
-            $imagePath = null;
-            if (!empty($extractDir) && !empty($product['image_export_path'])) {
-                $src = $extractDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $product['image_export_path']);
-                if (file_exists($src)) {
-                    $productDir = $slug . '/uploads/products/';
-                    if (!file_exists(toFsPath($productDir))) mkdir(toFsPath($productDir), 0777, true);
-                    $imageFileName = uniqid() . '.' . (pathinfo($src, PATHINFO_EXTENSION) ?: 'jpg');
-                    $imagePath = $productDir . $imageFileName;
-                    copy($src, toFsPath($imagePath));
+            $price              = $product['price'] ?? 0;
+            $discount_price     = $product['discount_price'] ?? null;
+            $oldCategoryId      = $product['category_id'] ?? null;
+            $newCategoryId      = ($oldCategoryId !== null && isset($categoryMap[$oldCategoryId])) ? $categoryMap[$oldCategoryId] : null;
+            $popular            = isset($product['popular']) ? intval($product['popular']) : 0;
+
+            $imagePath = restoreImportedAsset($extractDir, $product, 'image_export_path', 'image_base64', 'image_filename', $slug, 'products', 'jpg');
+
+            if ($hasProductTranslationColumns) {
+                $name_az        = $product['name_az'] ?? $productName;
+                $name_en        = $product['name_en'] ?? '';
+                $name_ru        = $product['name_ru'] ?? '';
+                $description_az = $product['description_az'] ?? $productDescription;
+                $description_en = $product['description_en'] ?? '';
+                $description_ru = $product['description_ru'] ?? '';
+                if ($hasProductIsActive) {
+                    $isActive = isset($product['is_active']) ? intval($product['is_active']) : 1;
+                    $stmt = $conn->prepare("INSERT INTO products (name, name_az, name_en, name_ru, description, description_az, description_en, description_ru, price, discount_price, category_id, image_path, popular, restaurant_id, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    $stmt->bind_param("ssssssssddissii", $productName, $name_az, $name_en, $name_ru, $productDescription, $description_az, $description_en, $description_ru, $price, $discount_price, $newCategoryId, $imagePath, $popular, $newRestaurantId, $isActive);
+                } else {
+                    $stmt = $conn->prepare("INSERT INTO products (name, name_az, name_en, name_ru, description, description_az, description_en, description_ru, price, discount_price, category_id, image_path, popular, restaurant_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    $stmt->bind_param("ssssssssddissi", $productName, $name_az, $name_en, $name_ru, $productDescription, $description_az, $description_en, $description_ru, $price, $discount_price, $newCategoryId, $imagePath, $popular, $newRestaurantId);
                 }
-            } elseif (!empty($product['image_base64']) && !empty($product['image_filename'])) {
-                $productDir = $slug . '/uploads/products/';
-                if (!file_exists(toFsPath($productDir))) mkdir(toFsPath($productDir), 0777, true);
-                $imageExtension = pathinfo($product['image_filename'], PATHINFO_EXTENSION);
-                $imageFileName = uniqid() . '.' . $imageExtension;
-                $imagePath = $productDir . $imageFileName;
-                file_put_contents(toFsPath($imagePath), base64_decode($product['image_base64']));
-            }
-            
-            // Insert with or without translation columns and is_active
-            if ($hasProductTranslationColumns && $hasIsActiveColumn) {
-                $stmt = $conn->prepare("INSERT INTO products (name, name_az, name_en, name_ru, description, description_az, description_en, description_ru, price, discount_price, category_id, image_path, popular, restaurant_id, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $isActive = isset($product['is_active']) ? intval($product['is_active']) : 1;
-                $stmt->bind_param("ssssssssddissii", $productName, $name_az, $name_en, $name_ru, $productDescription, $description_az, $description_en, $description_ru, $price, $discount_price, $newCategoryId, $imagePath, $popular, $newRestaurantId, $isActive);
-            } elseif ($hasProductTranslationColumns) {
-                $stmt = $conn->prepare("INSERT INTO products (name, name_az, name_en, name_ru, description, description_az, description_en, description_ru, price, discount_price, category_id, image_path, popular, restaurant_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->bind_param("ssssssssddissi", $productName, $name_az, $name_en, $name_ru, $productDescription, $description_az, $description_en, $description_ru, $price, $discount_price, $newCategoryId, $imagePath, $popular, $newRestaurantId);
-            } elseif ($hasIsActiveColumn) {
-                $stmt = $conn->prepare("INSERT INTO products (name, description, price, discount_price, category_id, image_path, popular, restaurant_id, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $isActive = isset($product['is_active']) ? intval($product['is_active']) : 1;
-                $stmt->bind_param("ssddissii", $productName, $productDescription, $price, $discount_price, $newCategoryId, $imagePath, $popular, $newRestaurantId, $isActive);
             } else {
-                $stmt = $conn->prepare("INSERT INTO products (name, description, price, discount_price, category_id, image_path, popular, restaurant_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->bind_param("ssddissi", $productName, $productDescription, $price, $discount_price, $newCategoryId, $imagePath, $popular, $newRestaurantId);
+                if ($hasProductIsActive) {
+                    $isActive = isset($product['is_active']) ? intval($product['is_active']) : 1;
+                    $stmt = $conn->prepare("INSERT INTO products (name, description, price, discount_price, category_id, image_path, popular, restaurant_id, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    $stmt->bind_param("ssddissii", $productName, $productDescription, $price, $discount_price, $newCategoryId, $imagePath, $popular, $newRestaurantId, $isActive);
+                } else {
+                    $stmt = $conn->prepare("INSERT INTO products (name, description, price, discount_price, category_id, image_path, popular, restaurant_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                    $stmt->bind_param("ssddissi", $productName, $productDescription, $price, $discount_price, $newCategoryId, $imagePath, $popular, $newRestaurantId);
+                }
             }
-            $stmt->execute();
+            if (!$stmt->execute()) {
+                throw new Exception('Məhsul əlavə edilə bilmədi: ' . $conn->error);
+            }
             $catName = $categoryNamesByNewId[$newCategoryId] ?? '';
-            syncProductToPool($conn, $catName, $productName, $productDescription, $price, $discount_price, $imagePath, $popular);
-            
-            $processedCount++;
-            
-            // Log progress every 50 products
-            if ($processedCount % $batchSize === 0) {
-                error_log("Import progress: $processedCount / $productCount products imported");
+            $poolQueue[] = [$catName, $productName, $productDescription, $price, $discount_price, $imagePath, $popular];
+            $productCount++;
+        }
+
+        // --- Insert product sets ---
+        $setCount = 0;
+        if ($hasSetsTable) {
+            foreach ($sets as $set) {
+                if (!is_array($set)) {
+                    continue;
+                }
+                $setName        = $set['name'] ?? '';
+                $setDescription = $set['description'] ?? '';
+                $setPrice       = $set['price'] ?? 0;
+                $setActive      = isset($set['is_active']) ? intval($set['is_active']) : 1;
+                $setImagePath   = restoreImportedAsset($extractDir, $set, 'image_export_path', 'image_base64', 'image_filename', $slug, 'sets', 'jpg');
+
+                $stmt = $conn->prepare("INSERT INTO product_sets (restaurant_id, name, description, price, image_path, is_active) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param("issdsi", $newRestaurantId, $setName, $setDescription, $setPrice, $setImagePath, $setActive);
+                if (!$stmt->execute()) {
+                    throw new Exception('Set əlavə edilə bilmədi: ' . $conn->error);
+                }
+                $setCount++;
             }
         }
-        
-        error_log("Import completed: $processedCount products imported successfully");
-        
-        // Create restaurant directory and HTML file
+
+        if (!$conn->commit()) {
+            throw new Exception('Tranzaksiya təsdiqlənə bilmədi');
+        }
+        // ===================== TRANSACTION END =======================
+
+        // Filesystem side-effects (non-transactional, run after a successful commit).
         createRestaurantDirectory($newRestaurantId, $slug, $name, $description, $address, $phone, $wifi_password, $logoPath, $coverPath, $instagram_url, $facebook_url, $whatsapp_url, $tiktok_url, $phone2, $phone3, $phone4);
-        
+
+        // Populate the central menu pool (best-effort; failures here must not fail the import).
+        foreach ($categoryTemplateQueue as $ct) {
+            try {
+                ensureCategoryTemplate($conn, $ct[0], $ct[1], $ct[2]);
+            } catch (Throwable $ignore) {
+                error_log('ensureCategoryTemplate skipped: ' . $ignore->getMessage());
+            }
+        }
+        foreach ($poolQueue as $pq) {
+            try {
+                syncProductToPool($conn, $pq[0], $pq[1], $pq[2], $pq[3], $pq[4], $pq[5], $pq[6]);
+            } catch (Throwable $ignore) {
+                error_log('syncProductToPool skipped: ' . $ignore->getMessage());
+            }
+        }
+
         $conn->close();
-        
-        if ($extractDir && is_dir($extractDir)) {
-            $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($extractDir, RecursiveDirectoryIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
-            foreach ($files as $f) {
-                if ($f->isDir()) @rmdir($f->getRealPath()); else @unlink($f->getRealPath());
-            }
-            @rmdir($extractDir);
-        }
-        
+        $conn = null;
+        removeDirTree($extractDir);
+
         echo json_encode([
-            'success' => true, 
-            'message' => 'Restoran uğurla idxal edildi',
+            'success'       => true,
+            'message'       => 'Restoran uğurla idxal edildi',
             'restaurant_id' => $newRestaurantId,
-            'slug' => $slug
+            'slug'          => $slug,
+            'imported'      => [
+                'categories'   => $categoryCount,
+                'products'     => $productCount,
+                'product_sets' => $setCount,
+            ],
         ], JSON_UNESCAPED_UNICODE);
-    } catch (Exception $e) {
-        if (isset($extractDir) && $extractDir && is_dir($extractDir)) {
-            $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($extractDir, RecursiveDirectoryIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
-            foreach ($files as $f) {
-                if ($f->isDir()) @rmdir($f->getRealPath()); else @unlink($f->getRealPath());
-            }
-            @rmdir($extractDir);
+    } catch (Throwable $e) {
+        if ($conn && $conn->inTransaction()) {
+            @$conn->rollback();
         }
-        if (isset($conn)) {
-            $conn->close();
+        if ($conn) {
+            @$conn->close();
         }
-        echo json_encode(['success' => false, 'message' => 'Xəta: ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        removeDirTree($extractDir);
+        error_log('Import failed: ' . $e->getMessage());
+        sendJsonError('İdxal xətası: ' . $e->getMessage());
     }
 }
 

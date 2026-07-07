@@ -14,7 +14,8 @@ services:
       - birmenu_network
 
   app:
-    image: php:8.2-apache
+    build: .
+    image: birmenu_app:local
     container_name: birmenu_app
     ports:
       - "8080:80"
@@ -28,7 +29,6 @@ services:
       DB_PASS: Ilnt94gnfi7gwZ09QstWfy1uar0lv1UZ
       DB_NAME: birmenu
       DB_PORT: 5432
-    command: bash -c "apt-get update && apt-get install -y libpq-dev && docker-php-ext-install pdo pdo_pgsql && apache2-foreground"
     networks:
       - birmenu_network
 
