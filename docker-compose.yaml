@@ -18,7 +18,7 @@ services:
     image: birmenu_app:local
     container_name: birmenu_app
     ports:
-      - "8080:80"
+      - "8088:80"
     volumes:
       - ./:/var/www/html
     depends_on:
@@ -29,6 +29,7 @@ services:
       DB_PASS: Ilnt94gnfi7gwZ09QstWfy1uar0lv1UZ
       DB_NAME: birmenu
       DB_PORT: 5432
+    command: bash -c "apt-get update && apt-get install -y libpq-dev libzip-dev && docker-php-ext-install pdo pdo_pgsql zip && { echo 'upload_max_filesize=128M'; echo 'post_max_size=128M'; echo 'memory_limit=512M'; echo 'max_execution_time=600'; echo 'max_input_time=600'; } > /usr/local/etc/php/conf.d/birmenu-uploads.ini && apache2-foreground"
     networks:
       - birmenu_network
 
